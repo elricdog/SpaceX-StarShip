@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>SpaceX StarShip</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link rel="icon" href="./favicon.ico" type="image/x-icon"/>
+		<link rel="shortcut icon" href="./favicon.ico" type="image/x-icon"/>
+		<link type="text/css" rel="stylesheet" href="main.css">
+	</head>
+	<body>
+		<section id="loading-screen">
+			<center>
+			<img src="./spacex.png"/>
+			<br>
+			SpaceX StarShip<br>
+			Progress: <label id="lblProgressValue">Waiting...</label><br>
+			<br>
+			by<br>
+			Elric / Anaconda<br>
+			</center>
+			<div id="loader"/>
+		</section>
+	
+		<script type="module">
+			import * as THREE from './three.js/build/three.module.js';			
+			import Stats from './three.js/examples/jsm/libs/stats.module.js';
+			import StatsVR from './statsvr/statsvr.js'
+			import { MapControls } from './three.js/examples/jsm/controls/OrbitControls.js';
+			import { FBXLoader } from './three.js/examples/jsm/loaders/FBXLoader.js';
+			import { GLTFLoader } from './three.js/examples/jsm/loaders/GLTFLoader.js';
+			import { DRACOLoader } from './three.js/examples/jsm/loaders/DRACOLoader.js';
+			import { RoughnessMipmapper } from './three.js/examples/jsm/utils/RoughnessMipmapper.js';
+			import { ShadowMapViewer } from './three.js/examples/jsm/utils/ShadowMapViewer.js';
+			import { Lensflare, LensflareElement } from './three.js/examples/jsm/objects/Lensflare.js'
+			import { VRButton } from './three.js/examples/jsm/webxr/VRButton.js'
+			import { XRControllerModelFactory } from './three.js/examples/jsm/webxr/XRControllerModelFactory.js';
+
+			let container;
+			let scene, renderer;
+			let camera, cameraHolder;
+			let controls;
+			let stats = null;
+			let statsVR = null;
+			let sunLight, spaceLight, dirLight;
+			
+			let plane;
+			let material, envMap;
+			let textureCube, textureCube2;
+			
+			const _debugStats = true;
+			const _debugShadow = false;
+			const _debugDimensionGrids = false;
+			const _debugCubeReference = true;
+			const _debugHumanReference = false;
+			const _debugDragonReference = true;
+			const _debugLog = true;
+			
+			const clock = new THREE.Clock();
+			
+			const SHADOW_MAP_WIDTH = 1024, SHADOW_MAP_HEIGHT = 1024;
+			let SCREEN_WIDTH = window.innerWidth;
+			let SCREEN_HEIGHT = window.innerHeight;
+			let light;
+			let lightShadowMapViewer;
+			
+			let objStarShip;
+			let objTopLeftWing;
+			let objTopRightWing;
+			let objBottomLeftWing;
+			let objBottomRightWing;
+			
+			const incrementWingRotation = 0.01;		
+			let lastWingRotated;
+			let multiplierWingRotation = 1;
+			
+			let textureLensFlare0, textureLensFlare2, textureLensFlare3;
+			let lensflare;
+			
+			let controller1, controller2;
+			let controllerGrip1, controllerGrip2;
+			
+			let raycaster;
+			const intersected = [];
+			const tempMatrix = new THREE.Matrix4();
+			const intersectableObjects = [];
+			let intersectionParent;
+			
+			const lineSegments = 10;
+			let lineGeometryVertices;
+			const g = new THREE.Vector3(0,-9.8,0);
+			const tempVec = new THREE.Vector3();
+			const tempVec1 = new THREE.Vector3();
+			const tempVecP = new THREE.Vector3();
+			const tempVecV = new THREE.Vector3();			
+			let guidingController = null;
+			let guideline, guidelight, guidesprite;
+			
+			init();
+			animate();
+
+			function init() {
+				// Web Document
+				container = document.createElement( 'div' );
+				document.body.appendChild( container );				
+
+				// Loading screen
+				const loadingManager = new THREE.LoadingManager( () => {				
+					const loadingScreen = document.getElementById( 'loading-screen' );
+					loadingScreen.classList.add( 'fade-out' );					
+					loadingScreen.addEventListener( 'transitionend', onTransitionEnd );					
+				} );							
+				loadingManager.onProgress = function ( url, itemsLoaded, itemsTotal ) {
+					debugLog( 'Loading file: ' + url + '.\nLoaded ' + itemsLoaded + ' of ' + itemsTotal + ' files.' );
+					document.getElementById('lblProgressValue').innerHTML = itemsLoaded + ' of ' + itemsTotal;
+				};
+
+				// Camera
+				camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.1, 2500 );
+				camera.position.set( 50, 60, 50 );
+				
+				// Scene
+				scene = new THREE.Scene();
+				scene.background = new THREE.Color( 0xd4cec0 );
+				scene.fog = new THREE.Fog( 0xd4cec0, 50, 250 );
+
+				// Camera Group
+				cameraHolder = new THREE.Group();
+				cameraHolder.add(camera);
+				cameraHolder.position.set(-14, 0, +2);
+				cameraHolder.rotation.set(0, THREE.MathUtils.degToRad(260), 0);
+				scene.add(cameraHolder); 
+
+				// Lights				
+				sunLight = new THREE.HemisphereLight( 0xbfbfbf, 0xd4cec0 )
+				scene.add( sunLight );
+				spaceLight = new THREE.HemisphereLight( 0x5f5f7f, 0x0f0f1f )
+				spaceLight.visible = false;
+				scene.add( spaceLight );
+				
+				dirLight = new THREE.DirectionalLight( 0xd4cec0 );				
+				dirLight.position.set( -100, 70, 50 );				
+				dirLight.castShadow = true;
+				dirLight.shadow.camera.near = 10;
+				dirLight.shadow.camera.far = 250;
+				dirLight.shadow.camera.left = -50;
+				dirLight.shadow.camera.bottom = -50;
+				dirLight.shadow.camera.right = 50;
+				dirLight.shadow.camera.top = 50;
+				dirLight.shadow.bias = 0.0001;
+				dirLight.shadow.mapSize.width = SHADOW_MAP_WIDTH;
+				dirLight.shadow.mapSize.height = SHADOW_MAP_HEIGHT;
+				scene.add( dirLight );
+								
+				if (_debugShadow)
+				{
+					const helper = new THREE.CameraHelper( dirLight.shadow.camera );
+					scene.add( helper );
+								
+					lightShadowMapViewer = new ShadowMapViewer( dirLight );
+					lightShadowMapViewer.position.x = 10;
+					lightShadowMapViewer.position.y = SCREEN_HEIGHT - ( SHADOW_MAP_HEIGHT / 6 ) - 10;
+					lightShadowMapViewer.size.width = SHADOW_MAP_WIDTH / 6;
+					lightShadowMapViewer.size.height = SHADOW_MAP_HEIGHT / 6;
+					lightShadowMapViewer.update();
+				}
+				
+				const loaderTexture = new THREE.TextureLoader(loadingManager);
+				
+				// Lensflare
+				textureLensFlare0 = loaderTexture.load( './models/lensflare/lensflare0.png' ),
+				textureLensFlare2 = loaderTexture.load( './models/lensflare/hexangle.png' ),
+				textureLensFlare3 = loaderTexture.load( './models/lensflare/lensflare3.png' ),
+				lensflare = new Lensflare();
+				lensflare.position.copy( dirLight.position );
+				lensflare.addElement( new LensflareElement( textureLensFlare0, 350, 0.0 ));
+				lensflare.addElement( new LensflareElement( textureLensFlare3,  60, 0.6 ));
+				lensflare.addElement( new LensflareElement( textureLensFlare2,  70, 0.7 ));
+				lensflare.addElement( new LensflareElement( textureLensFlare3, 120, 0.9 ));
+				lensflare.addElement( new LensflareElement( textureLensFlare3,  80, 1.0 ));
+				scene.add( lensflare );
+				
+				// Ground
+				plane = new THREE.Mesh(
+					new THREE.PlaneBufferGeometry( 250, 250, 32, 32 ),
+					new THREE.MeshStandardMaterial( {
+						map: loaderTexture.load('./models/background/ny.png'),						
+					} )
+				);
+				plane.rotation.x = - Math.PI / 2;
+				plane.receiveShadow = true;
+				scene.add( plane );								
+				
+				if (_debugDimensionGrids)
+				{
+					// Ruler Ground
+					const grid = new THREE.GridHelper( 100, 100, 0x000000, 0x000000 );
+					grid.material.opacity = 0.2;
+					grid.material.transparent = true;
+					scene.add( grid );
+					
+					// Ruler Vertical
+					const grid2 = new THREE.GridHelper( 50, 50, 0x000000, 0x000000 );
+					grid2.position.y = 25;
+					grid2.position.z = -10;
+					grid2.rotation.x = - Math.PI / 2;
+					grid2.material.opacity = 0.4;
+					grid2.material.transparent = true;
+					scene.add( grid2 );					
+				}
+								
+				if (_debugCubeReference)
+				{
+					// Cube reference 1m				
+					const geometry = new THREE.BoxGeometry( 1, 1, 1 );
+					const cube = new THREE.Mesh( geometry, 
+						new THREE.MeshStandardMaterial( {
+							map: loaderTexture.load('./models/uv_grid_opengl.jpg')
+						} ) );
+					cube.position.set( -11.5, 0.5, -0.5 );
+					cube.castShadow = true;
+					cube.receiveShadow = false;
+					scene.add( cube );
+				}
+				
+				// Background
+				const loaderSceneBackground = new THREE.CubeTextureLoader(loadingManager);
+				loaderSceneBackground.setPath( './models/background/' );
+				textureCube = loaderSceneBackground.load( [ 'px.jpg', 'nx.jpg', 'py.jpg', 'ny.jpg', 'pz.jpg', 'nz.jpg' ] );
+				textureCube.encoding = THREE.sRGBEncoding;
+				scene.background = textureCube;
+
+				// Background2
+				loaderSceneBackground.setPath( './models/background2/' );
+				textureCube2 = loaderSceneBackground.load( [ 'px.jpg', 'nx.jpg', 'py.jpg', 'ny.jpg', 'pz.jpg', 'nz.jpg' ] );
+				textureCube2.encoding = THREE.sRGBEncoding;				
+				
+				// Renderer
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.outputEncoding = THREE.sRGBEncoding;
+				renderer.toneMapping = THREE.ACESFilmicToneMapping;
+				renderer.toneMappingExposure = 1;
+				renderer.autoClear = false;
+				renderer.shadowMap.enabled = true;
+				renderer.xr.enabled = true;
+				container.appendChild( renderer.domElement );
+				
+				// Load StarShip material						
+				THREE.DefaultLoadingManager.onLoad = function ( ) {
+					pmremGenerator.dispose();
+				};
+								
+				var texture = loaderTexture.load("./models/MetallicMap.png", function(tx) {
+					tx.anisotropy = 16;
+					tx.magFilter = THREE.LinearFilter;
+					tx.minFilter = THREE.LinearMipmapLinearFilter;
+					tx.wrapS = THREE.RepeatWrapping;
+					tx.wrapT = THREE.RepeatWrapping;
+					tx.generateMipmaps = true;
+				});
+
+				material = new THREE.MeshStandardMaterial({
+					map: texture,
+					roughness: 0.15,
+					metalness: 1.15,
+					metalnessMap : texture,
+					roughnessMap : texture,
+					vertexTangents : true,
+					envMapIntensity: 0.45,
+					fog: true,
+				});
+  				
+				loaderTexture.load( './models/MetallicEnv.jpg', function ( texture ) {
+					texture.encoding = THREE.sRGBEncoding;
+					envMap = pmremGenerator.fromEquirectangular( texture );
+					texture.dispose();					
+					applyEnvironmentMapToStarShip(envMap.texture, -1);
+				} );	
+				
+				// Load StarShip mesh
+  				const loader = new FBXLoader(loadingManager);								
+				loader.load(
+					'./models/StarShip-SN8.fbx', 
+					// called when the resource is loaded
+					function ( object ) {
+						//debugLog( 'StarShip objects: ' );
+						object.traverse(function(child) {
+								if (child instanceof THREE.Mesh) {
+									//debugLog( '- ' + child.name );
+									// get StarShip rotation objects
+									switch (child.name)
+									{
+										case "101_Left_canard":
+											objTopLeftWing = child;
+											break;
+										case "111_Right_canard":
+											objTopRightWing = child;
+											break;
+										case "121_Left_Aft_Wing":
+											objBottomLeftWing = child;
+											break;
+										case "131_Right_Aft_Wing":
+											objBottomRightWing = child;
+											break;
+									}									
+									child.castShadow = true;
+									child.receiveShadow = true;
+									child.material = material.clone();
+									
+									intersectableObjects.push(child);
+								}
+							});									
+						objStarShip = object;
+						applyEnvironmentMapToStarShip(envMap.texture, -1);
+						scene.add( object );
+					},
+					// called as loading progresses
+					function ( xhr ) {
+						debugLog( ( xhr.loaded / xhr.total * 100 ) + '% loaded' );
+					},
+					// called when loading has errors
+					function ( error ) {
+						console.log( 'An error happened ' + error );
+					}				
+				);
+					
+				if (_debugHumanReference)
+				{
+					// Load Human reference
+					loader.load(
+						'./models/BaseHuman.fbx', 
+						// called when the resource is loaded
+						function ( object ) {
+							object.traverse(function(child) {
+									if (child instanceof THREE.Mesh) {
+										child.castShadow = true;
+										child.receiveShadow = false;
+										child.position.x = -10.5;
+										child.position.z = -0.5;
+									}
+								});					
+							scene.add( object );
+						},
+						// called as loading progresses
+						function ( xhr ) {
+							debugLog( ( xhr.loaded / xhr.total * 100 ) + '% loaded' );
+						},
+						// called when loading has errors
+						function ( error ) {
+							console.log( 'An error happened ' + error );
+						}				
+					);				
+				}
+
+				if (_debugDragonReference)
+				{
+					// Load Dragon reference
+					const roughnessMipmapper = new RoughnessMipmapper( renderer );
+					const loader2 = new GLTFLoader(loadingManager);
+					loader2.setPath( './models/dragon/' );					
+					
+					const dracoLoader = new DRACOLoader(loadingManager);
+					dracoLoader.setDecoderPath( './three.js/examples/js/libs/draco/gltf/' );
+					loader2.setDRACOLoader( dracoLoader );
+				
+					loader2.load(
+						'scene.gltf', 
+						// called when the resource is loaded
+						function ( gltf ) {
+							gltf.scene.traverse(function(child) {
+									if (child instanceof THREE.Mesh) {
+										child.castShadow = true;
+										child.receiveShadow = false;
+										child.position.x = -10.5;
+										child.position.y = -10.5;
+										child.position.z = 5;
+									}
+								});					
+							scene.add( gltf.scene );
+							roughnessMipmapper.dispose();
+						},
+						// called as loading progresses
+						function ( xhr ) {
+							debugLog( ( xhr.loaded / xhr.total * 100 ) + '% loaded' );
+						},
+						// called when loading has errors
+						function ( error ) {
+							console.log( 'An error happened ' + error );
+						}				
+					);				
+				}				
+				
+				// Load controller panel
+				loader.load(
+					'./models/Controller.fbx', 
+					// called when the resource is loaded
+					function ( object ) {
+						object.traverse(function(child) {
+								if (child instanceof THREE.Mesh) {
+									child.castShadow = true;
+									child.receiveShadow = false;
+								}
+							});					
+						scene.add( object );
+					},
+					// called as loading progresses
+					function ( xhr ) {
+						debugLog( ( xhr.loaded / xhr.total * 100 ) + '% loaded' );
+					},
+					// called when loading has errors
+					function ( error ) {
+						console.log( 'An error happened ' + error );
+					}				
+				);								
+									
+				// VR controllers
+				controller1 = renderer.xr.getController( 0 );
+				controller1.addEventListener( 'selectstart', onSelectStart );
+				controller1.addEventListener( 'selectend', onSelectEnd );
+				controller1.addEventListener( 'squeezestart', onSqueezeStart );
+				controller1.addEventListener( 'squeezeend', onSqueezeEnd );
+				cameraHolder.add( controller1 );
+				
+				controller2 = renderer.xr.getController( 1 );
+				controller2.addEventListener( 'selectstart', onSelectStart );
+				controller2.addEventListener( 'selectend', onSelectEnd );
+				controller2.addEventListener( 'squeezestart', onSqueezeStart );
+				controller2.addEventListener( 'squeezeend', onSqueezeEnd );
+				cameraHolder.add( controller2 );
+				
+				const controllerModelFactory = new XRControllerModelFactory();
+				
+				controllerGrip1 = renderer.xr.getControllerGrip(0);
+				controllerGrip1.add( controllerModelFactory.createControllerModel( controllerGrip1 ) );
+				cameraHolder.add( controllerGrip1 );
+				
+				controllerGrip2 = renderer.xr.getControllerGrip(1);
+				controllerGrip2.add( controllerModelFactory.createControllerModel( controllerGrip2 ) );
+				cameraHolder.add( controllerGrip2 );
+
+				// VR Intersection
+				const geometry = new THREE.BufferGeometry().setFromPoints( [ new THREE.Vector3( 0, 0, 0 ), new THREE.Vector3( 0, 0, -1 ) ] );
+				const line = new THREE.Line( geometry );
+				line.name = 'line';
+				line.scale.z = 5;
+				controller1.add( line.clone() );
+				controller2.add( line.clone() );								
+				raycaster = new THREE.Raycaster();
+				
+				// VR Locomotion
+				// VR Locomotion - The guideline				
+				const lineGeometry = new THREE.BufferGeometry();
+				lineGeometryVertices = new Float32Array((lineSegments + 1) * 3);
+				lineGeometryVertices.fill(0);
+				const lineGeometryColors = new Float32Array((lineSegments + 1) * 3);
+				lineGeometryColors.fill(0.5);
+				lineGeometry.setAttribute('position', new THREE.BufferAttribute(lineGeometryVertices, 3));
+				lineGeometry.setAttribute('color', new THREE.BufferAttribute(lineGeometryColors, 3));
+				const lineMaterial = new THREE.LineBasicMaterial({ vertexColors: true, blending: THREE.AdditiveBlending });
+				guideline = new THREE.Line( lineGeometry, lineMaterial );
+				// VR Locomotion - The light at the end of the line
+				guidelight = new THREE.PointLight(0x00ff00, 0, 2);				
+				// VR Locomotion - The target on the ground
+				const guidespriteTexture = loaderTexture.load('./models/target.png');
+				guidesprite = new THREE.Mesh(
+					new THREE.PlaneGeometry(1, 1, 1, 1),
+					new THREE.MeshBasicMaterial({
+						map: guidespriteTexture,
+						blending: THREE.AdditiveBlending,
+						color: 0x001100,
+						transparent: true
+					})
+				);
+				guidesprite.rotation.x = -Math.PI/2;				
+												
+				// Material Stuff
+				let pmremGenerator = new THREE.PMREMGenerator( renderer );
+				pmremGenerator.compileEquirectangularShader();				
+
+				// Controls
+				controls = new MapControls( camera, renderer.domElement );
+				controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
+				controls.dampingFactor = 0.05;
+				controls.screenSpacePanning = true;
+				controls.enableKeys = true;
+				controls.keyPanSpeed = 12.0;
+				controls.target.set(0,25,0);
+				controls.keys = { LEFT: 37, UP: 38, RIGHT: 39, BOTTOM: 40 };
+				
+				// Keyboard
+				document.addEventListener("keydown", onDocumentKeyDown, false);
+				
+				// Window
+				window.addEventListener( 'resize', onWindowResize, false );
+
+				// Stats
+				if (_debugStats)
+				{
+					stats = new Stats();
+					container.appendChild( stats.dom );
+				}
+				
+				// StatsVR
+				if (_debugStats)
+				{
+					statsVR = new StatsVR(scene, camera);
+					statsVR.setX(0);
+					statsVR.setY(0);
+					statsVR.setZ(-2);
+					statsVR.setEnabled(false);
+				}
+			}
+
+			function onWindowResize() {
+				SCREEN_WIDTH = window.innerWidth;
+				SCREEN_HEIGHT = window.innerHeight;
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+				renderer.setSize( window.innerWidth, window.innerHeight );				
+			}
+
+			function onTransitionEnd( event ) {
+				debugLog( 'Remove loading screen' );
+				const element = event.target;
+				element.remove();	
+
+				// Add ENTER VR button
+				document.body.appendChild( VRButton.createButton( renderer ) );				
+			}
+			
+			function debugLog( text ) {
+				if (_debugLog)
+					console.log( text );
+			}
+			
+			function onDocumentKeyDown(event) {				
+				if ( objStarShip == null ) return;
+				var key = event.key;
+				debugLog( 'KeyDown event: ' + key );
+												
+				switch (key) 
+				{
+					case 'R':
+						debugLog( 'Reset Wing rotation' );
+						objTopLeftWing.rotation.z = 0;
+						objTopRightWing.rotation.z = 0;
+						objBottomLeftWing.rotation.z = 0;
+						objBottomRightWing.rotation.z = 0;
+						break;
+					case 'r':
+						debugLog( 'Reset Last Wing rotation' );
+						if (lastWingRotated != null)
+							lastWingRotated.rotation.z = 0;
+						break;
+					case 'M':
+						debugLog( 'Wing rotation increased' );
+						multiplierWingRotation = 5;
+						break;
+					case 'm':
+						debugLog( 'Wing rotation decreased' );
+						multiplierWingRotation = 1;
+						break;
+					case '1':
+						rotateWing("Top-Left", objTopLeftWing, incrementWingRotation * multiplierWingRotation, event.ctrlKey, 0, 72, +1);
+						break;
+					case '2':
+						rotateWing("Top-Right", objTopRightWing, incrementWingRotation * multiplierWingRotation, event.ctrlKey, 0, -72, -1);
+						break;
+					case '3':
+						rotateWing("Bottom-Left", objBottomLeftWing, incrementWingRotation * multiplierWingRotation, event.ctrlKey, 0, 75, +1);
+						break;
+					case '4':
+						rotateWing("Bottom-Right", objBottomRightWing, incrementWingRotation * multiplierWingRotation, event.ctrlKey, 0, -75, -1);
+						break;					
+					case '5':
+						rotateWing("Top-Left", objTopLeftWing, incrementWingRotation * multiplierWingRotation, event.ctrlKey, 0, 72, +1);
+						rotateWing("Top-Right", objTopRightWing, incrementWingRotation * multiplierWingRotation, event.ctrlKey, 0, -72, -1);
+						break;
+					case '6':
+						rotateWing("Bottom-Left", objBottomLeftWing, incrementWingRotation * multiplierWingRotation, event.ctrlKey, 0, 75, +1);
+						rotateWing("Bottom-Right", objBottomRightWing, incrementWingRotation * multiplierWingRotation, event.ctrlKey, 0, -75, -1);
+						break;
+					case '7':
+						rotateWing("Top-Left", objTopLeftWing, incrementWingRotation * multiplierWingRotation, event.ctrlKey, 0, 72, +1);
+						rotateWing("Top-Right", objTopRightWing, incrementWingRotation * multiplierWingRotation, event.ctrlKey, 0, -72, -1);
+						rotateWing("Bottom-Left", objBottomLeftWing, incrementWingRotation * multiplierWingRotation, event.ctrlKey, 0, 75, +1);
+						rotateWing("Bottom-Right", objBottomRightWing, incrementWingRotation * multiplierWingRotation, event.ctrlKey, 0, -75, -1);
+						break;
+					case '8':
+						objTopLeftWing.rotation.z = 0;
+						objTopRightWing.rotation.z = 0;
+						objBottomLeftWing.rotation.z = 0;
+						objBottomRightWing.rotation.z = 0;
+						rotateWing("Top-Left", objTopLeftWing, THREE.MathUtils.degToRad(40), false, 0, 72, +1);
+						rotateWing("Top-Right", objTopRightWing, THREE.MathUtils.degToRad(40), false, 0, -72, -1);
+						rotateWing("Bottom-Left", objBottomLeftWing, THREE.MathUtils.degToRad(40), false, 0, 75, +1);
+						rotateWing("Bottom-Right", objBottomRightWing, THREE.MathUtils.degToRad(40), false, 0, -75, -1);
+						break;
+					case '9':
+						objTopLeftWing.rotation.z = 0;
+						objTopRightWing.rotation.z = 0;
+						objBottomLeftWing.rotation.z = 0;
+						objBottomRightWing.rotation.z = 0;
+						rotateWing("Top-Left", objTopLeftWing, THREE.MathUtils.degToRad(90), false, 0, 72, +1);
+						rotateWing("Top-Right", objTopRightWing, THREE.MathUtils.degToRad(90), false, 0, -72, -1);
+						rotateWing("Bottom-Left", objBottomLeftWing, THREE.MathUtils.degToRad(90), false, 0, 75, +1);
+						rotateWing("Bottom-Right", objBottomRightWing, THREE.MathUtils.degToRad(90), false, 0, -75, -1);
+						break;
+					case '0':
+						debugLog( 'Open all Wings' );
+						objTopLeftWing.rotation.z = 0;
+						objTopRightWing.rotation.z = 0;
+						objBottomLeftWing.rotation.z = 0;
+						objBottomRightWing.rotation.z = 0;
+						break;
+
+					case 'C':
+						debugLog( 'StarShip reset to launch position' );
+						objStarShip.position.y = 0;
+						break;					
+					case 'c':
+						debugLog( 'StarShip reset to land position' );
+						objStarShip.position.y = 1;
+						break;					
+					case 'ArrowUp':
+						debugLog( 'StarShip Up' );
+						objStarShip.position.y+=1;
+						break;
+					case 'ArrowDown':
+						debugLog( 'StarShip Down' );
+						if (objStarShip.position.y>0)
+							objStarShip.position.y-=1;
+						break;
+					case 'ArrowLeft':
+						debugLog( 'StarShip Rotate Left' );
+						objStarShip.rotation.y+=0.01;
+						break;
+					case 'ArrowRight':
+						debugLog( 'StarShip Rotate Right' );
+						objStarShip.rotation.y-=0.01;							
+						break;
+						
+					case 'g':
+						debugLog( 'StarShip on ground' );
+						sunLight.visible = true;
+						spaceLight.visible = false;
+						dirLight.color = new THREE.Color( 0xd4cec0 );
+						scene.background = new THREE.Color( 0xd4cec0 );
+						scene.fog = new THREE.Fog( 0xd4cec0, 50, 250 );
+						plane.visible = true;
+						scene.background = textureCube;
+						applyEnvironmentMapToStarShip(envMap.texture, 0.45);
+						break;
+					case 'G':
+						debugLog( 'StarShip on space' );
+						sunLight.visible = false;
+						spaceLight.visible = true;
+						dirLight.color = new THREE.Color( 0xffffff );
+						scene.background = new THREE.Color( 0x0 );
+						scene.fog = new THREE.Fog( 0x0, 50, 2500 );
+						plane.visible = false;
+						scene.background = textureCube2;
+						applyEnvironmentMapToStarShip(textureCube2, 1);
+						break;
+						
+					case 's':
+						debugLog( 'Shadows off' );
+						dirLight.castShadow = false;
+						renderer.shadowMap.enabled = false;
+						renderer.shadowMap.autoUpdate = false;
+						renderer.shadowMap.needsUpdate = true;						
+						break;
+					case 'S':
+						debugLog( 'Shadows on' );
+						dirLight.castShadow = true;
+						renderer.shadowMap.autoUpdate = true;
+						renderer.shadowMap.enabled = true;
+						break;
+				} 
+			}					
+						
+			function animate()
+			{
+				renderer.setAnimationLoop( function () {
+					controls.update();	
+					updateIntersections();
+					updateLocomotion();
+					updateStats();
+					render();	
+				} );
+			}
+
+			function render() {
+				const delta = clock.getDelta();
+				
+				if (statsVR != null)
+					statsVR.startTimer();
+				renderer.render( scene, camera );
+				if (statsVR != null)
+					statsVR.endTimer();					
+				
+				if (_debugShadow)
+					lightShadowMapViewer.render( renderer );
+			}
+
+			function updateStats() {
+				if (stats != null)
+				{
+					stats.update();
+				}
+				if (statsVR != null)
+				{
+					statsVR.setEnabled(renderer.xr.isPresenting);
+					statsVR.update();
+				}
+			}
+			
+			function rotateWing(id, mesh, increment, reverse, minAngle, maxAngle, dir) {
+				if (reverse)
+					increment = -increment;
+				var finalAngle = THREE.MathUtils.radToDeg(mesh.rotation.z + (dir * increment));
+				if (dir > 0)
+				{
+					if (finalAngle < minAngle) 
+						finalAngle = minAngle;
+					if (finalAngle > maxAngle) 
+						finalAngle = maxAngle;
+				}
+				else
+				{
+					if (finalAngle > minAngle) 
+						finalAngle = minAngle;
+					if (finalAngle < maxAngle) 
+						finalAngle = maxAngle;
+				}
+				mesh.rotation.z = THREE.MathUtils.degToRad(finalAngle);
+				lastWingRotated = mesh;
+				debugLog( id + ' Wing rotation to ' + THREE.MathUtils.radToDeg(lastWingRotated.rotation.z) + ' degrees');
+			}
+
+			function applyEnvironmentMapToStarShip( texture, intensity ) {
+				if (objStarShip == null) return;
+				debugLog("Setting environment map to StarShip material");
+				objStarShip.traverse(function(child) {
+					if (child instanceof THREE.Mesh) {
+						if ( intensity > 0 )
+							child.material.envMapIntensity = intensity;
+						child.material.envMap = texture;
+						child.material.needsUpdate = true;
+					}
+				} );
+			}
+						
+			function updateLocomotion() {
+				if (guidingController) 
+				{
+					// Controller start position
+					const p = guidingController.getWorldPosition(tempVecP);
+
+					// Set Vector V to the direction of the controller, at 1m/s
+					const v = guidingController.getWorldDirection(tempVecV);
+
+					// Scale the initial velocity to 6m/s
+					v.multiplyScalar(6);
+
+					// Time for tele ball to hit ground
+					const t = (-v.y  + Math.sqrt(v.y**2 - 2*p.y*g.y))/g.y;
+
+					const vertex = tempVec.set(0,0,0);
+					for (let i=1; i<=lineSegments; i++) {
+
+						// set vertex to current position of the virtual ball at time t
+						positionAtT(vertex,i*t/lineSegments,p,v,g);
+						guidingController.worldToLocal(vertex);
+						vertex.toArray(lineGeometryVertices,i*3);
+					}
+					guideline.geometry.attributes.position.needsUpdate = true;
+					
+					// Place the light and sprite near the end of the poing
+					positionAtT(guidelight.position,t*0.98,p,v,g);
+					positionAtT(guidesprite.position,t*0.98,p,v,g);
+				}
+			}
+			
+			function onSqueezeStart( event ) {
+				guidingController = event.target;
+				guidelight.intensity = 1;
+				guidingController.add(guideline);
+				scene.add(guidelight);
+				scene.add(guidesprite);
+			}
+
+			function onSqueezeEnd( event ) {
+				if (guidingController === event.target) 
+				{
+					// first work out vector from feet to cursor
+					// feet position
+					const feetPos = renderer.xr.getCamera(camera).getWorldPosition(tempVec);
+					feetPos.y = 0;
+					// cursor position
+					const p = guidingController.getWorldPosition(tempVecP);
+					const v = guidingController.getWorldDirection(tempVecV);
+					v.multiplyScalar(6);
+					const t = (-v.y  + Math.sqrt(v.y**2 - 2*p.y*g.y))/g.y;
+					const cursorPos = positionAtT(tempVec1,t,p,v,g);
+					// offset
+					const offset = cursorPos.addScaledVector(feetPos ,-1);
+					// do the locomotion
+					locomotion(offset);
+					// clean up
+					guidingController = null;
+					guidelight.intensity = 0;
+					event.target.remove(guideline);
+					scene.remove(guidelight);
+					scene.remove(guidesprite);
+				}
+			}
+			
+			function locomotion(offset) {
+				cameraHolder.position.add(offset);
+			} 
+			
+			function positionAtT(inVec,t,p,v,g) {
+				inVec.copy(p);
+				inVec.addScaledVector(v,t);
+				inVec.addScaledVector(g,0.5*t**2);
+				return inVec;
+			}
+			
+			function updateIntersections() {
+				cleanIntersected();
+				intersectObjects( controller1 );
+				intersectObjects( controller2 );			
+			}
+			
+			function onSelectStart( event ) {
+				const controller = event.target;
+				if (guidingController === controller) 
+				{
+					// clean up locomotion if actived
+					guidingController = null;
+					guidelight.intensity = 0;
+					controller.remove(guideline);
+					scene.remove(guidesprite);
+				}									
+				const intersections = getIntersections( controller );
+				if ( intersections.length > 0 ) {
+					const intersection = intersections[ 0 ];
+					const object = intersection.object;
+					object.material.emissive.b = 1;
+					intersectionParent = object.parent;
+					controller.attach( object );
+					controller.userData.selected = object;									
+				}
+			}
+
+			function onSelectEnd( event ) {
+				const controller = event.target;
+				if ( controller.userData.selected !== undefined ) {
+					const object = controller.userData.selected;
+					object.material.emissive.b = 0;
+					intersectionParent.attach( object );
+					controller.userData.selected = undefined;
+				}
+			}
+
+			function getIntersections( controller ) {
+				tempMatrix.identity().extractRotation( controller.matrixWorld );
+				raycaster.ray.origin.setFromMatrixPosition( controller.matrixWorld );
+				raycaster.ray.direction.set( 0, 0, - 1 ).applyMatrix4( tempMatrix );
+				return raycaster.intersectObjects( intersectableObjects );
+			}
+
+			function intersectObjects( controller ) {
+				// Do not highlight when already selected
+				if ( controller.userData.selected !== undefined ) return;
+				const line = controller.getObjectByName( 'line' );
+				const intersections = getIntersections( controller );
+				if ( intersections.length > 0 ) {
+					const intersection = intersections[ 0 ];
+					const object = intersection.object;
+					object.material.emissive.r = 1;
+					intersected.push( object );
+					line.scale.z = intersection.distance;
+				} else {
+					line.scale.z = 5;
+				}
+			}
+
+			function cleanIntersected() {
+				while ( intersected.length ) {
+					const object = intersected.pop();
+					object.material.emissive.r = 0;
+				}
+			}
+			
+		</script>
+	</body>
+</html>
