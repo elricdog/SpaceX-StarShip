@@ -1,7 +1,7 @@
 //MIT License
 //Copyright (c) 2020 Sean Bradley
 //https://github.com/Sean-Bradley/StatsVR/blob/master/LICENSE
-import * as THREE from '../three.js/build/three.module.js';
+import * as THREE from '../three.js/three.js-master/build/three.module.js';
 export default class StatsVR {
     constructor(scene, camera) {
         this.timer = (performance || Date);
