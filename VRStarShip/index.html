@@ -9,19 +9,79 @@
 		<link type="text/css" rel="stylesheet" href="main.css">
 	</head>
 	<body>
+		<div id="canvas">
+			<div id="help">
+				<center>
+				SpaceX StarShip Simulator by Elric / Anaconda<br>
+				<h2><b>Help</b></h2>				
+				<button onclick="closeHelpScreen()">Close</button>				
+				</center>
+				<p>
+					<h3><b>&nbsp;In non VR:</b></h3>
+					<ul>
+						<li>H - Toggle this Help screen visibility</li>
+						<li>Use Mouse to control camera position</li>
+						<li>R - Reset Wing rotation</li>
+						<li>r - Reset Last Wing rotation</li>
+						<li>M - Wing rotation increased</li>
+						<li>m - Wing rotation decreased</li>
+						<li>1 - Move Top-Left wing</li>
+						<li>2 - Move Top-Right wing</li>
+						<li>3 - Move Bottom-Left wing</li>
+						<li>4 - Move Bottom-Right wing</li>
+						<li>5 - Move Top wings together</li>
+						<li>6 - Move Bottom wings together</li>
+						<li>7 - Move 4 wings together</li>
+						<li>8 - Wings folded at medium</li>
+						<li>9 - Wings folded at maximum</li>
+						<li>0 - Open all Wings</li>
+						<li>C - StarShip reset to launch position</li>
+						<li>c - StarShip reset to land position</li>
+						<li>Arrow Up - StarShip Up</li>
+						<li>Arrow Down - StarShip Down</li>
+						<li>ArrowLeft - StarShip Rotate Left</li>
+						<li>ArrowRight - StarShip Rotate Right</li>
+						<li>g - StarShip on ground</li>
+						<li>G - StarShip on space</li>
+						<li>s - Shadows off</li>
+						<li>S - Shadows on</li>
+						<li>E - Toggle VR statistics visibility</li>
+						<li>e - Toggle statistics visibility</li>
+					</ul>
+					<h3><b>&nbsp;In VR:</b></h3>
+					<ul>						
+						<li>Use the controller panels to manage StarShip actions</li>
+						<li>Use Trigger - to teletransport to another position</li>
+						<li>Use Grip - to grab StarShip parts</li>
+						<li>Use a controller gamepad - to move arround</li>
+						<li>Use a keyboard to execute non VR key commands</li>
+					</ul>
+				</p>
+			</div>
+		</div>
+	
 		<section id="loading-screen">
 			<center>
 			<img src="./spacex.png"/>
 			<br>
 			SpaceX StarShip<br>
 			Progress: <label id="lblProgressValue">Waiting...</label><br>
+			<progress id="pbProgressBar" max="100" value="0"/><br>
 			<br>
 			by<br>
 			Elric / Anaconda<br>
 			</center>
 			<div id="loader"/>
 		</section>
-	
+			
+		<script>
+			function closeHelpScreen()
+			{
+				const helpScreen = document.getElementById( 'help' );
+				helpScreen.style.visibility = "hidden";
+			}		
+		</script>
+		
 		<script type="module">
 			import * as THREE from './three.js/three.js-master/build/three.module.js';			
 			import Stats from './three.js/three.js-master/examples/jsm/libs/stats.module.js';
@@ -41,7 +101,9 @@
 			let camera, cameraHolder;
 			let controls;
 			let stats = null;
+			let statsVisibility;
 			let statsVR = null;
+			let statsVRVisibility;
 			let sunLight, spaceLight, dirLight;
 			
 			let plane;
@@ -101,8 +163,7 @@
 
 			function init() {
 				// Web Document
-				container = document.createElement( 'div' );
-				document.body.appendChild( container );				
+				container = document.getElementById( 'canvas' );
 
 				// Loading screen
 				const loadingManager = new THREE.LoadingManager( () => {				
@@ -113,6 +174,8 @@
 				loadingManager.onProgress = function ( url, itemsLoaded, itemsTotal ) {
 					debugLog( 'Loading file: ' + url + '.\nLoaded ' + itemsLoaded + ' of ' + itemsTotal + ' files.' );
 					document.getElementById('lblProgressValue').innerHTML = itemsLoaded + ' of ' + itemsTotal;
+					document.getElementById('pbProgressBar').max = itemsTotal;
+					document.getElementById('pbProgressBar').value = itemsLoaded;
 				};
 
 				// Camera
@@ -500,6 +563,7 @@
 				{
 					stats = new Stats();
 					container.appendChild( stats.dom );
+					statsVisibility = true;
 				}
 				
 				// StatsVR
@@ -510,6 +574,7 @@
 					statsVR.setY(0);
 					statsVR.setZ(-2);
 					statsVR.setEnabled(false);
+					statsVRVisibility = false;
 				}
 			}
 
@@ -534,7 +599,7 @@
 				if (_debugLog)
 					console.log( text );
 			}
-			
+						
 			function onDocumentKeyDown(event) {				
 				if ( objStarShip == null ) return;
 				var key = event.key;
@@ -542,6 +607,36 @@
 												
 				switch (key) 
 				{
+					case 'h':
+					case 'H':
+						const helpScreen = document.getElementById( 'help' );
+						if (helpScreen.style.visibility != "hidden")
+							helpScreen.style.visibility = "hidden";
+						else
+							helpScreen.style.visibility = "visible";
+						debugLog( 'Toggle help to ' + helpScreen.style.visibility);
+						break;
+
+					case 'e':
+						if (stats != null)
+						{	
+							statsVisibility = !statsVisibility;
+							if (statsVisibility)					
+								container.appendChild( stats.dom );
+							else
+								container.removeChild( stats.dom );														
+							debugLog( 'Toggle stats to ' + statsVisibility );
+						}
+						break;
+					case 'E':
+						if (statsVR != null)
+						{	
+							statsVRVisibility = !statsVRVisibility;						
+							statsVR.setEnabled(statsVRVisibility && renderer.xr.isPresenting);
+							debugLog( 'Toggle stats VR to ' + statsVRVisibility);
+						}						
+						break;
+				
 					case 'R':
 						debugLog( 'Reset Wing rotation' );
 						objTopLeftWing.rotation.z = 0;
@@ -688,6 +783,7 @@
 					updateIntersections();
 					updateLocomotion();
 					updateStats();
+					updateHelp();
 					render();	
 				} );
 			}
@@ -695,9 +791,13 @@
 			function render() {
 				const delta = clock.getDelta();
 				
+				if (stats != null)
+					stats.begin();
 				if (statsVR != null)
 					statsVR.startTimer();
 				renderer.render( scene, camera );
+				if (stats != null)
+					stats.end();
 				if (statsVR != null)
 					statsVR.endTimer();					
 				
@@ -712,9 +812,21 @@
 				}
 				if (statsVR != null)
 				{
-					statsVR.setEnabled(renderer.xr.isPresenting);
-					statsVR.update();
+					if (renderer.xr.isPresenting)
+					{
+						statsVR.setEnabled(statsVRVisibility);
+						statsVR.update();
+					}
+					else 
+					{
+						statsVR.setEnabled(false);
+					}
 				}
+			}
+			
+			function updateHelp() {
+				if (renderer.xr.isPresenting)
+					closeHelpScreen();
 			}
 			
 			function rotateWing(id, mesh, increment, reverse, minAngle, maxAngle, dir) {

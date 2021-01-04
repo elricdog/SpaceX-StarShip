@@ -4,6 +4,7 @@
 import * as THREE from '../three.js/three.js-master/build/three.module.js';
 export default class StatsVR {
     constructor(scene, camera) {
+		this.enabled = true;
         this.timer = (performance || Date);
         this.msActive = false;
         this.msStart = this.timer.now();
@@ -34,6 +35,10 @@ export default class StatsVR {
     }
     setEnabled(enabled) {
         this.statsPlane.visible = enabled;
+		this.enabled = enabled;
+    }
+    getEnabled() {
+        return this.enabled;
     }
     setX(val) {
         this.statsPlane.position.x = val;

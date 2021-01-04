@@ -108,7 +108,7 @@ a, button, input, select {
     margin: -75px 0 0 -75px;
     border-radius: 50%;
     border: 3px solid transparent;
-    border-top-color: #9370DB;
+    border-top-color: #70DB93;
     -webkit-animation: spin 2s linear infinite;
     animation: spin 2s linear infinite;
 }
@@ -121,7 +121,7 @@ a, button, input, select {
     bottom: 5px;
     border-radius: 50%;
     border: 3px solid transparent;
-    border-top-color: #BA55D3;
+    border-top-color: #55D3BA;
     -webkit-animation: spin 3s linear infinite;
     animation: spin 3s linear infinite;
 }
@@ -134,7 +134,7 @@ a, button, input, select {
     bottom: 15px;
     border-radius: 50%;
     border: 3px solid transparent;
-    border-top-color: #FF00FF;
+    border-top-color: #00FFFF;
     -webkit-animation: spin 1.5s linear infinite;
     animation: spin 1.5s linear infinite;
 }
@@ -161,4 +161,27 @@ a, button, input, select {
         -ms-transform: rotate(360deg);
         transform: rotate(360deg);
     }
+}
+
+#help { 
+    position:absolute;
+	left: 25%;
+	top: 15%;
+    width: 50%;
+    height: 70%;
+    background-color: #7F7F7F7F;
+	overflow-y: scroll;
+}
+
+progress::-moz-progress-bar { background: #55D3BA; }
+progress::-webkit-progress-value { background: #55D3BA; }
+progress {
+  color: #55D3BA;
+  font-size: .6em;
+  line-height: 1.5em;
+  text-indent: .5em;
+  width: 15em;
+  height: 1.8em;
+  border: 2px solid #70DB93;
+  background: #fff;
 }
