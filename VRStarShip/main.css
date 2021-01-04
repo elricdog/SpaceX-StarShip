@@ -165,10 +165,10 @@ a, button, input, select {
 
 #help { 
     position:absolute;
-	left: 25%;
+	left: 15%;
 	top: 15%;
-    width: 50%;
-    height: 70%;
+    width: 70%;
+    height: 60%;
     background-color: #7F7F7F7F;
 	overflow-y: scroll;
 }
@@ -185,3 +185,54 @@ progress {
   border: 2px solid #70DB93;
   background: #fff;
 }
+
+img {
+	max-width:100%;
+    height:auto;
+}
+
+::-webkit-scrollbar-track-piece{
+	background-color:#fff;
+	-webkit-border-radius:0;
+}
+::-webkit-scrollbar{
+	width:32px;
+	height:8px;
+}
+::-webkit-scrollbar-thumb{
+	height:50px;
+	background-color:#999;
+	-webkit-border-radius:4px;
+	outline:2px solid #fff;
+	outline-offset:-2px;
+	border: 2px solid #fff;
+}
+::-webkit-scrollbar-thumb:hover{
+	height:50px;
+	background-color:#9f9f9f;
+	-webkit-border-radius:4px;
+}
+
+.myButton {
+	background-color:#44c767;
+	border-radius:28px;
+	border:1px solid #18ab29;
+	display:inline-block;
+	cursor:pointer;
+	color:#ffffff;
+	font-family:Arial;
+	font-size:22px;
+	font-weight:bold;
+	padding:12px 28px;
+	text-decoration:none;
+	text-shadow:0px 1px 0px #2f6627;
+}
+.myButton:hover {
+	background-color:#5cbf2a;
+}
+.myButton:active {
+	position:relative;
+	top:1px;
+}
+
+        

@@ -12,9 +12,8 @@
 		<div id="canvas">
 			<div id="help">
 				<center>
-				SpaceX StarShip Simulator by Elric / Anaconda<br>
-				<h2><b>Help</b></h2>				
-				<button onclick="closeHelpScreen()">Close</button>				
+				<h1><b>Help and Keyboard</b></h1>				
+				<button class="myButton" onclick="closeHelpScreen()">Close</button><br>
 				</center>
 				<p>
 					<h3><b>&nbsp;In non VR:</b></h3>
@@ -57,19 +56,20 @@
 						<li>Use a keyboard to execute non VR key commands</li>
 					</ul>
 				</p>
+				<br>
+				<center>
+				StarShip Simulator by Elric / Anaconda<br>
+				</center>
 			</div>
 		</div>
 	
 		<section id="loading-screen">
 			<center>
-			<img src="./spacex.png"/>
+			<img id="imgLogo" src="./spacex.png"/>
 			<br>
-			SpaceX StarShip<br>
+			StarShip Simulator by Elric / Anaconda<br>
 			Progress: <label id="lblProgressValue">Waiting...</label><br>
 			<progress id="pbProgressBar" max="100" value="0"/><br>
-			<br>
-			by<br>
-			Elric / Anaconda<br>
 			</center>
 			<div id="loader"/>
 		</section>
