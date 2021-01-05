@@ -12,54 +12,59 @@
 		<div id="canvas">
 			<div id="help">
 				<center>
-				<h1><b>Help and Keyboard</b></h1>				
-				<button class="myButton" onclick="closeHelpScreen()">Close</button><br>
+				<br>
+				<button class="myButton" onclick="closeHelpScreen()">Press here to close</button><br>
+				<h1><b>---=== Help ===---</b></h1>
 				</center>
 				<p>
 					<h3><b>&nbsp;In non VR:</b></h3>
 					<ul>
-						<li>H - Toggle this Help screen visibility</li>
-						<li>Use Mouse to control camera position</li>
-						<li>R - Reset Wing rotation</li>
-						<li>r - Reset Last Wing rotation</li>
-						<li>M - Wing rotation increased</li>
-						<li>m - Wing rotation decreased</li>
-						<li>1 - Move Top-Left wing</li>
-						<li>2 - Move Top-Right wing</li>
-						<li>3 - Move Bottom-Left wing</li>
-						<li>4 - Move Bottom-Right wing</li>
-						<li>5 - Move Top wings together</li>
-						<li>6 - Move Bottom wings together</li>
-						<li>7 - Move 4 wings together</li>
-						<li>8 - Wings folded at medium</li>
-						<li>9 - Wings folded at maximum</li>
-						<li>0 - Open all Wings</li>
-						<li>C - StarShip reset to launch position</li>
-						<li>c - StarShip reset to land position</li>
-						<li>Arrow Up - StarShip Up</li>
-						<li>Arrow Down - StarShip Down</li>
-						<li>ArrowLeft - StarShip Rotate Left</li>
-						<li>ArrowRight - StarShip Rotate Right</li>
-						<li>g - StarShip on ground</li>
-						<li>G - StarShip on space</li>
-						<li>s - Shadows off</li>
-						<li>S - Shadows on</li>
-						<li>E - Toggle VR statistics visibility</li>
-						<li>e - Toggle statistics visibility</li>
+						<li>H - Toggle this Help screen visibility.</li>
+						<li>Use Mouse to control camera position.</li>
+						<li>R - Reset Wing rotation.</li>
+						<li>r - Reset Last Wing rotation.</li>
+						<li>M - Wing rotation increased.</li>
+						<li>m - Wing rotation decreased.</li>
+						<li>1 - Move Top-Left wing.</li>
+						<li>2 - Move Top-Right wing.</li>
+						<li>3 - Move Bottom-Left wing.</li>
+						<li>4 - Move Bottom-Right wing.</li>
+						<li>5 - Move Top wings together.</li>
+						<li>6 - Move Bottom wings together.</li>
+						<li>7 - Move 4 wings together.</li>
+						<li>8 - Wings folded at medium.</li>
+						<li>9 - Wings folded at maximum.</li>
+						<li>0 - Open all Wings.</li>
+						<li>C - StarShip reset to launch position.</li>
+						<li>c - StarShip reset to land position.</li>
+						<li>Arrow Up - StarShip Up.</li>
+						<li>Arrow Down - StarShip Down.</li>
+						<li>ArrowLeft - StarShip Rotate Left.</li>
+						<li>ArrowRight - StarShip Rotate Right.</li>
+						<li>g - StarShip on ground.</li>
+						<li>G - StarShip on space environment.</li>
+						<li>h - Shadows off.</li>
+						<li>H - Shadows on.</li>
+						<li>E - Toggle VR statistics visibility.</li>
+						<li>e - Toggle statistics visibility.</li>
 					</ul>
 					<h3><b>&nbsp;In VR:</b></h3>
 					<ul>						
-						<li>Use the controller panels to manage StarShip actions</li>
-						<li>Use Trigger - to teletransport to another position</li>
-						<li>Use Grip - to grab StarShip parts</li>
-						<li>Use a controller gamepad - to move arround</li>
-						<li>Use a keyboard to execute non VR key commands</li>
+						<li>Use the controller panels to manage StarShip actions.</li>
+						<li>Use Trigger - to teletransport to another position.</li>
+						<li>Use Grip - to grab StarShip parts.</li>
+						<li>Use a controller gamepad - to move arround.</li>
+						<li>Use a keyboard to execute non VR key commands.</li>
 					</ul>
 				</p>
 				<br>
 				<center>
 				StarShip Simulator by Elric / Anaconda<br>
+				<div id="sfcxdk9e7e626k4t67ey5afp5zgm8ukty5p"></div>
+				<script type="text/javascript" src="https://counter8.stat.ovh/private/counter.js?c=xdk9e7e626k4t67ey5afp5zgm8ukty5p&down=async" async></script>
+				<button class="myButton" onclick="closeHelpScreen()">Press here to close</button><br>
 				</center>
+				<br>
 			</div>
 		</div>
 	
@@ -87,6 +92,9 @@
 			import Stats from './three.js/three.js-master/examples/jsm/libs/stats.module.js';
 			import StatsVR from './statsvr/statsvr.js'
 			import { MapControls } from './three.js/three.js-master/examples/jsm/controls/OrbitControls.js';
+			import { OrbitControls } from './three.js/three.js-master/examples/jsm/controls/OrbitControls.js';
+			import { FirstPersonControls } from './three.js/three.js-master/examples/jsm/controls/FirstPersonControls.js';
+			import { FlyControls } from './three.js/three.js-master/examples/jsm/controls/FlyControls.js';
 			import { FBXLoader } from './three.js/three.js-master/examples/jsm/loaders/FBXLoader.js';
 			import { GLTFLoader } from './three.js/three.js-master/examples/jsm/loaders/GLTFLoader.js';
 			import { DRACOLoader } from './three.js/three.js-master/examples/jsm/loaders/DRACOLoader.js';
@@ -95,6 +103,7 @@
 			import { Lensflare, LensflareElement } from './three.js/three.js-master/examples/jsm/objects/Lensflare.js'
 			import { VRButton } from './three.js/three.js-master/examples/jsm/webxr/VRButton.js'
 			import { XRControllerModelFactory } from './three.js/three.js-master/examples/jsm/webxr/XRControllerModelFactory.js';
+			import ParticleSystem from './particleSystem/particleSystem.js'
 
 			let container;
 			let scene, renderer;
@@ -117,6 +126,9 @@
 			const _debugHumanReference = false;
 			const _debugDragonReference = true;
 			const _debugLog = true;
+
+			const _controlsType = "orbit";
+			const _hideHelpInitially = true;
 			
 			const clock = new THREE.Clock();
 			
@@ -158,6 +170,9 @@
 			let guidingController = null;
 			let guideline, guidelight, guidesprite;
 			
+			let objMotor1, objMotor2, objMotor3;
+			let particlesE1, particlesE2, particlesE3;
+			
 			init();
 			animate();
 
@@ -169,6 +184,7 @@
 				const loadingManager = new THREE.LoadingManager( () => {				
 					const loadingScreen = document.getElementById( 'loading-screen' );
 					loadingScreen.classList.add( 'fade-out' );					
+					loadingScreen.addEventListener( 'transitionstart', onTransitionStart );					
 					loadingScreen.addEventListener( 'transitionend', onTransitionEnd );					
 				} );							
 				loadingManager.onProgress = function ( url, itemsLoaded, itemsTotal ) {
@@ -348,10 +364,10 @@
 					'./models/StarShip-SN8.fbx', 
 					// called when the resource is loaded
 					function ( object ) {
-						//debugLog( 'StarShip objects: ' );
+						debugLog( 'StarShip objects: ' );
 						object.traverse(function(child) {
 								if (child instanceof THREE.Mesh) {
-									//debugLog( '- ' + child.name );
+									debugLog( '- ' + child.name );
 									// get StarShip rotation objects
 									switch (child.name)
 									{
@@ -367,6 +383,15 @@
 										case "131_Right_Aft_Wing":
 											objBottomRightWing = child;
 											break;
+										case "7_Raptor_Engine001":
+											objMotor1 = child;
+											break;
+										case "7_Raptor_Engine002":
+											objMotor2 = child;
+											break;
+										case "7_Raptor_Engine003":
+											objMotor3 = child;
+											break;
 									}									
 									child.castShadow = true;
 									child.receiveShadow = true;
@@ -378,6 +403,47 @@
 						objStarShip = object;
 						applyEnvironmentMapToStarShip(envMap.texture, -1);
 						scene.add( object );
+						
+						// Particles						
+						scene.updateMatrixWorld(true);
+						var position = new THREE.Vector3();
+						var rotation = new THREE.Quaternion();
+						// Particles - E1
+						objMotor1.getWorldQuaternion(rotation); 
+						objMotor1.geometry.computeBoundingSphere();						
+						position = objMotor1.geometry.boundingSphere.center;
+						position.multiplyScalar(0.1);
+						position.applyQuaternion(rotation);
+						debugLog("Engine001: "+position.x+" "+position.y+" "+position.z);						
+						var orientation = new THREE.Group();																																												
+						orientation.position.set(position.x, 1, position.z);
+						orientation.rotation.set(0, THREE.MathUtils.degToRad(90), 0);
+						object.add(orientation);
+						particlesE1 = new ParticleSystem({ parent: orientation, camera: camera });											
+						// Particles - E2
+						objMotor2.getWorldQuaternion(rotation); 
+						objMotor2.geometry.computeBoundingSphere();						
+						position = objMotor2.geometry.boundingSphere.center;
+						position.multiplyScalar(0.1);
+						position.applyQuaternion(rotation);
+						debugLog("Engine002: "+position.x+" "+position.y+" "+position.z);
+						var orientation = new THREE.Group();																																												
+						orientation.position.set(position.x, 1, position.z);
+						orientation.rotation.set(0, THREE.MathUtils.degToRad(90), 0);
+						object.add(orientation);
+						particlesE2 = new ParticleSystem({ parent: orientation, camera: camera });												
+						// Particles - E3
+						objMotor3.getWorldQuaternion(rotation); 
+						objMotor3.geometry.computeBoundingSphere();						
+						position = objMotor3.geometry.boundingSphere.center;
+						position.multiplyScalar(0.1);
+						position.applyQuaternion(rotation);
+						debugLog("Engine003: "+position.x+" "+position.y+" "+position.z);
+						var orientation = new THREE.Group();																																												
+						orientation.position.set(position.x, 1, position.z);
+						orientation.rotation.set(0, THREE.MathUtils.degToRad(90), 0);
+						object.add(orientation);
+						particlesE3 = new ParticleSystem({ parent: orientation, camera: camera });												
 					},
 					// called as loading progresses
 					function ( xhr ) {
@@ -543,14 +609,46 @@
 				pmremGenerator.compileEquirectangularShader();				
 
 				// Controls
-				controls = new MapControls( camera, renderer.domElement );
-				controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
-				controls.dampingFactor = 0.05;
-				controls.screenSpacePanning = true;
-				controls.enableKeys = true;
-				controls.keyPanSpeed = 12.0;
-				controls.target.set(0,25,0);
-				controls.keys = { LEFT: 37, UP: 38, RIGHT: 39, BOTTOM: 40 };
+				switch (_controlsType)
+				{
+					case "map":
+						// Controls Map
+						controls = new MapControls( camera, renderer.domElement );
+						controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
+						controls.dampingFactor = 0.05;
+						controls.screenSpacePanning = true;
+						controls.enableKeys = true;
+						controls.keyPanSpeed = 12.0;
+						controls.target.set(0,25,0);
+						break;				
+					case "orbit":
+						// Controls Orbit
+						controls = new OrbitControls( camera, renderer.domElement );
+						controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
+						controls.dampingFactor = 0.05;
+						controls.screenSpacePanning = true;
+						controls.enableKeys = true;
+						controls.keyPanSpeed = 12.0;
+						controls.target.set(0,25,0);
+						break;
+					case "fpv":
+						// Controls First Person
+						controls = new FirstPersonControls( cameraHolder, renderer.domElement );
+						controls.activeLook = true;
+						controls.autoForward = false;
+						controls.movementSpeed = 10;
+						controls.lookSpeed = 0.01;
+						controls.lookVertical = true;
+						camera.position.set( -11, 1, 1 );
+						break;
+					case "fly":
+						// Controls Fly
+						controls = new FlyControls( cameraHolder, renderer.domElement );
+						controls.autoForward = false;
+						controls.movementSpeed = 10;
+						camera.position.set( -11, 1, 1 );
+						break;
+				}
 				
 				// Keyboard
 				document.addEventListener("keydown", onDocumentKeyDown, false);
@@ -583,14 +681,21 @@
 				SCREEN_HEIGHT = window.innerHeight;
 				camera.aspect = window.innerWidth / window.innerHeight;
 				camera.updateProjectionMatrix();
+				controls.handleResize();
 				renderer.setSize( window.innerWidth, window.innerHeight );				
 			}
 
+			function onTransitionStart( event ) {
+				// Hide help?
+				if (_hideHelpInitially)
+					closeHelpScreen();
+			}
+			
 			function onTransitionEnd( event ) {
 				debugLog( 'Remove loading screen' );
 				const element = event.target;
 				element.remove();	
-
+				
 				// Add ENTER VR button
 				document.body.appendChild( VRButton.createButton( renderer ) );				
 			}
@@ -760,14 +865,14 @@
 						applyEnvironmentMapToStarShip(textureCube2, 1);
 						break;
 						
-					case 's':
+					case 'h':
 						debugLog( 'Shadows off' );
 						dirLight.castShadow = false;
 						renderer.shadowMap.enabled = false;
 						renderer.shadowMap.autoUpdate = false;
 						renderer.shadowMap.needsUpdate = true;						
 						break;
-					case 'S':
+					case 'H':
 						debugLog( 'Shadows on' );
 						dirLight.castShadow = true;
 						renderer.shadowMap.autoUpdate = true;
@@ -779,7 +884,7 @@
 			function animate()
 			{
 				renderer.setAnimationLoop( function () {
-					controls.update();	
+					controls.update(clock.getDelta());	
 					updateIntersections();
 					updateLocomotion();
 					updateStats();
@@ -790,14 +895,19 @@
 
 			function render() {
 				const delta = clock.getDelta();
-				
-				if (stats != null)
-					stats.begin();
+								
 				if (statsVR != null)
 					statsVR.startTimer();
+				
+				if (particlesE1!=null)
+					particlesE1.step(delta * 100);
+				if (particlesE2!=null)
+					particlesE2.step(delta * 100);
+				if (particlesE3!=null)
+					particlesE3.step(delta * 100);
+				
 				renderer.render( scene, camera );
-				if (stats != null)
-					stats.end();
+				
 				if (statsVR != null)
 					statsVR.endTimer();					
 				
@@ -1006,7 +1116,7 @@
 					const object = intersected.pop();
 					object.material.emissive.r = 0;
 				}
-			}
+			}		
 			
 		</script>
 	</body>

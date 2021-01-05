@@ -214,16 +214,16 @@ img {
 }
 
 .myButton {
-	background-color:#44c767;
+	background-color:#55D3BA;
 	border-radius:28px;
-	border:1px solid #18ab29;
+	border:2px solid #70DB93;
 	display:inline-block;
 	cursor:pointer;
 	color:#ffffff;
 	font-family:Arial;
 	font-size:22px;
 	font-weight:bold;
-	padding:12px 28px;
+	padding:10px 18px;
 	text-decoration:none;
 	text-shadow:0px 1px 0px #2f6627;
 }
