@@ -88,8 +88,11 @@ export default class ParticleSystem {
     this._geometry.setAttribute('colour', new THREE.Float32BufferAttribute([], 4));
     this._geometry.setAttribute('angle', new THREE.Float32BufferAttribute([], 1));	
 
+	this._sorted = false;
+	this._addParticlesEnabled = true;
+	
     this._points = new THREE.Points(this._geometry, this._material);
-
+	
     params.parent.add(this._points);
 
     this._alphaSpline = new LinearSpline((t, a, b) => {
@@ -120,29 +123,32 @@ export default class ParticleSystem {
   }
 
   _AddParticles(timeElapsed) {
-    if (!this.gdfsghk) {
-      this.gdfsghk = 0.0;
-    }
-    this.gdfsghk += timeElapsed;
-    const n = Math.floor(this.gdfsghk * 75.0);
-    this.gdfsghk -= n / 75.0;
+	if (this._addParticlesEnabled)
+	{
+		if (!this.gdfsghk) {
+		  this.gdfsghk = 0.0;
+		}
+		this.gdfsghk += timeElapsed;
+		const n = Math.floor(this.gdfsghk * 75.0);
+		this.gdfsghk -= n / 75.0;
 
-    for (let i = 0; i < n; i++) {
-      const life = (Math.random() * 0.75 + 0.25) * 10.0;
-      this._particles.push({
-          position: new THREE.Vector3(
-              (Math.random() * 2 - 1) * 0.5,
-              (Math.random() * 2 - 1) * 0.1,
-              (Math.random() * 2 - 1) * 0.5),
-          size: (Math.random() * 0.5 + 0.5) * 3.0,
-          colour: new THREE.Color(),
-          alpha: 1.0,
-          life: life,
-          maxLife: life,
-          rotation: Math.random() * 2.0 * Math.PI,
-          velocity: new THREE.Vector3(0, -15, 0),
-      });
-    }
+		for (let i = 0; i < n; i++) {
+		  const life = (Math.random() * 0.75 + 0.25) * 10.0;
+		  this._particles.push({
+			  position: new THREE.Vector3(
+				  (Math.random() * 2 - 1) * 0.5,
+				  (Math.random() * 2 - 1) * 0.1,
+				  (Math.random() * 2 - 1) * 0.5),
+			  size: (Math.random() * 0.5 + 0.5) * 3.0,
+			  colour: new THREE.Color(),
+			  alpha: 1.0,
+			  life: life,
+			  maxLife: life,
+			  rotation: Math.random() * 2.0 * Math.PI,
+			  velocity: new THREE.Vector3(0, -15, 0),
+		  });
+		}
+	}
   }
 
   _UpdateGeometry() {
@@ -199,28 +205,48 @@ export default class ParticleSystem {
       drag.z = Math.sign(p.velocity.z) * Math.min(Math.abs(drag.z), Math.abs(p.velocity.z));
       p.velocity.sub(drag);
     }
+  }
+  
+  _SortParticles()
+  {
+	if (this._sorted)
+	{
+		this._particles.sort((a, b) => {
+		  const d1 = this._camera.position.distanceTo(a.position);
+		  const d2 = this._camera.position.distanceTo(b.position);
 
-	/*
-    this._particles.sort((a, b) => {
-      const d1 = this._camera.position.distanceTo(a.position);
-      const d2 = this._camera.position.distanceTo(b.position);
+		  if (d1 > d2) {
+			return -1;
+		  }
 
-      if (d1 > d2) {
-        return -1;
-      }
+		  if (d1 < d2) {
+			return 1;
+		  }
 
-      if (d1 < d2) {
-        return 1;
-      }
-
-      return 0;
-    });
-	*/
+		  return 0;
+		});
+	}
   }
 
-  step(timeElapsed) {
+  step(timeElapsed) {	
     this._AddParticles(timeElapsed);
     this._UpdateParticles(timeElapsed);
+	this._SortParticles();
     this._UpdateGeometry();
+  }
+
+  setSort(sorted)
+  {
+	this._sorted = sorted;
+  }
+
+  setAddParticles(enabled)
+  {
+	this._addParticlesEnabled = enabled;
+  }
+  
+  setVisible(visible)
+  {
+	this._points.visible = visible;
   }
 }		

@@ -21,17 +21,17 @@
 					<ul>
 						<li>H - Toggle this Help screen visibility.</li>
 						<li>Use Mouse to control camera position.</li>
-						<li>R - Reset Wing rotation.</li>
+						<li>R - Reset Wings rotation.</li>
 						<li>r - Reset Last Wing rotation.</li>
 						<li>M - Wing rotation increased.</li>
 						<li>m - Wing rotation decreased.</li>
-						<li>1 - Move Top-Left wing.</li>
-						<li>2 - Move Top-Right wing.</li>
-						<li>3 - Move Bottom-Left wing.</li>
-						<li>4 - Move Bottom-Right wing.</li>
-						<li>5 - Move Top wings together.</li>
-						<li>6 - Move Bottom wings together.</li>
-						<li>7 - Move 4 wings together.</li>
+						<li>1 - Move Top-Left wing (use CTRL to decrease).</li>
+						<li>2 - Move Top-Right wing (use CTRL to decrease).</li>
+						<li>3 - Move Bottom-Left wing (use CTRL to decrease).</li>
+						<li>4 - Move Bottom-Right wing (use CTRL to decrease).</li>
+						<li>5 - Move Top wings together (use CTRL to decrease).</li>
+						<li>6 - Move Bottom wings together (use CTRL to decrease).</li>
+						<li>7 - Move 4 wings together (use CTRL to decrease).</li>
 						<li>8 - Wings folded at medium.</li>
 						<li>9 - Wings folded at maximum.</li>
 						<li>0 - Open all Wings.</li>
@@ -39,14 +39,31 @@
 						<li>c - StarShip reset to land position.</li>
 						<li>Arrow Up - StarShip Up.</li>
 						<li>Arrow Down - StarShip Down.</li>
-						<li>ArrowLeft - StarShip Rotate Left.</li>
-						<li>ArrowRight - StarShip Rotate Right.</li>
-						<li>g - StarShip on ground.</li>
+						<li>Arrow Left - StarShip Rotate Left.</li>
+						<li>Arrow Right - StarShip Rotate Right.</li>						
+						<li>CTRL + Arrow Up - StarShip Move Forward.</li>
+						<li>CTRL + Arrow Down - StarShip Move Backward.</li>
+						<li>CTRL + Arrow Left - StarShip Move Left.</li>
+						<li>CTRL + Arrow Right - StarShip Move Right.</li>						
 						<li>G - StarShip on space environment.</li>
-						<li>h - Shadows off.</li>
+						<li>g - StarShip on ground.</li>
 						<li>H - Shadows on.</li>
+						<li>h - Shadows off.</li>
 						<li>E - Toggle VR statistics visibility.</li>
 						<li>e - Toggle statistics visibility.</li>
+						<li>F - StarShip fire engines.</li>
+						<li>f - StarShip shutdown engines.</li>
+						<li>S - Reset Engines rotation.</li>
+						<li>s - Reset Last Engine rotation.</li>						
+						<li>NUMPAD 1 - Rotate Engine 1 X Axis (use CTRL to reverse).</li>
+						<li>NUMPAD 2 - Reset Rotation Engine 1.</li>
+						<li>NUMPAD 3 - Rotate Engine 1 Y Axis (use CTRL to reverse).</li>
+						<li>NUMPAD 4 - Rotate Engine 2 X Axis (use CTRL to reverse).</li>
+						<li>NUMPAD 5 - Reset Rotation Engine 2.</li>
+						<li>NUMPAD 6 - Rotate Engine 2 Y Axis (use CTRL to reverse).</li>
+						<li>NUMPAD 7 - Rotate Engine 3 X Axis (use CTRL to reverse).</li>
+						<li>NUMPAD 8 - Reset Rotation Engine 3.</li>
+						<li>NUMPAD 9 - Rotate Engine 3 Y Axis (use CTRL to reverse).</li>						
 					</ul>
 					<h3><b>&nbsp;In VR:</b></h3>
 					<ul>						
@@ -134,8 +151,7 @@
 			
 			const SHADOW_MAP_WIDTH = 1024, SHADOW_MAP_HEIGHT = 1024;
 			let SCREEN_WIDTH = window.innerWidth;
-			let SCREEN_HEIGHT = window.innerHeight;
-			let light;
+			let SCREEN_HEIGHT = window.innerHeight;			
 			let lightShadowMapViewer;
 			
 			let objStarShip;
@@ -172,6 +188,12 @@
 			
 			let objMotor1, objMotor2, objMotor3;
 			let particlesE1, particlesE2, particlesE3;
+			let particlesELight;
+			let defaultEngineRotation1, defaultEngineRotation2, defaultEngineRotation3;
+			const incrementEngineRotation = 0.005;					
+			let lastEngineRotated;
+			let lastEngineRotatedAxis;
+			let lastEngineRotatedDefaultRotation; 
 			
 			init();
 			animate();
@@ -349,6 +371,7 @@
 					vertexTangents : true,
 					envMapIntensity: 0.45,
 					fog: true,
+					side: THREE.FrontSide,
 				});
   				
 				loaderTexture.load( './models/MetallicEnv.jpg', function ( texture ) {
@@ -404,46 +427,8 @@
 						applyEnvironmentMapToStarShip(envMap.texture, -1);
 						scene.add( object );
 						
-						// Particles						
-						scene.updateMatrixWorld(true);
-						var position = new THREE.Vector3();
-						var rotation = new THREE.Quaternion();
-						// Particles - E1
-						objMotor1.getWorldQuaternion(rotation); 
-						objMotor1.geometry.computeBoundingSphere();						
-						position = objMotor1.geometry.boundingSphere.center;
-						position.multiplyScalar(0.1);
-						position.applyQuaternion(rotation);
-						debugLog("Engine001: "+position.x+" "+position.y+" "+position.z);						
-						var orientation = new THREE.Group();																																												
-						orientation.position.set(position.x, 1, position.z);
-						orientation.rotation.set(0, THREE.MathUtils.degToRad(90), 0);
-						object.add(orientation);
-						particlesE1 = new ParticleSystem({ parent: orientation, camera: camera });											
-						// Particles - E2
-						objMotor2.getWorldQuaternion(rotation); 
-						objMotor2.geometry.computeBoundingSphere();						
-						position = objMotor2.geometry.boundingSphere.center;
-						position.multiplyScalar(0.1);
-						position.applyQuaternion(rotation);
-						debugLog("Engine002: "+position.x+" "+position.y+" "+position.z);
-						var orientation = new THREE.Group();																																												
-						orientation.position.set(position.x, 1, position.z);
-						orientation.rotation.set(0, THREE.MathUtils.degToRad(90), 0);
-						object.add(orientation);
-						particlesE2 = new ParticleSystem({ parent: orientation, camera: camera });												
-						// Particles - E3
-						objMotor3.getWorldQuaternion(rotation); 
-						objMotor3.geometry.computeBoundingSphere();						
-						position = objMotor3.geometry.boundingSphere.center;
-						position.multiplyScalar(0.1);
-						position.applyQuaternion(rotation);
-						debugLog("Engine003: "+position.x+" "+position.y+" "+position.z);
-						var orientation = new THREE.Group();																																												
-						orientation.position.set(position.x, 1, position.z);
-						orientation.rotation.set(0, THREE.MathUtils.degToRad(90), 0);
-						object.add(orientation);
-						particlesE3 = new ParticleSystem({ parent: orientation, camera: camera });												
+						// Particles	
+						generateEnginesParticleSystem(object);
 					},
 					// called as loading progresses
 					function ( xhr ) {
@@ -681,20 +666,29 @@
 				SCREEN_HEIGHT = window.innerHeight;
 				camera.aspect = window.innerWidth / window.innerHeight;
 				camera.updateProjectionMatrix();
-				controls.handleResize();
+				if (typeof controls.handleResize === 'function')
+					controls.handleResize();
 				renderer.setSize( window.innerWidth, window.innerHeight );				
 			}
 
 			function onTransitionStart( event ) {
 				// Hide help?
 				if (_hideHelpInitially)
-					closeHelpScreen();
+				{
+					closeHelpScreen();					
+				}
 			}
 			
 			function onTransitionEnd( event ) {
 				debugLog( 'Remove loading screen' );
 				const element = event.target;
 				element.remove();	
+				
+				// Hide help after timeout
+				if (!_hideHelpInitially)
+				{
+					setTimeout(closeHelpScreen, 10000);
+				}
 				
 				// Add ENTER VR button
 				document.body.appendChild( VRButton.createButton( renderer ) );				
@@ -743,7 +737,7 @@
 						break;
 				
 					case 'R':
-						debugLog( 'Reset Wing rotation' );
+						debugLog( 'Reset Wings rotation' );
 						objTopLeftWing.rotation.z = 0;
 						objTopRightWing.rotation.z = 0;
 						objBottomLeftWing.rotation.z = 0;
@@ -762,51 +756,129 @@
 						debugLog( 'Wing rotation decreased' );
 						multiplierWingRotation = 1;
 						break;
+						
+					case 'S':
+						debugLog( 'Reset Engines rotation' );
+						resetEngineRotation("1", objMotor1, defaultEngineRotation1, '');
+						resetEngineRotation("2", objMotor2, defaultEngineRotation2, '');
+						resetEngineRotation("3", objMotor3, defaultEngineRotation3, '');
+						break;
+					case 's':
+						debugLog( 'Reset Last Engine rotation' );
+						if (lastEngineRotated != null)
+						{	
+							resetEngineRotation("Last Rotated", lastEngineRotated, lastEngineRotatedDefaultRotation, lastEngineRotatedAxis);
+						}
+						break;
+						
 					case '1':
-						rotateWing("Top-Left", objTopLeftWing, incrementWingRotation * multiplierWingRotation, event.ctrlKey, 0, 72, +1);
+						if (event.keyCode >= 96)
+						{
+							rotateEngine("1", objMotor1, defaultEngineRotation1, incrementEngineRotation, event.ctrlKey, -10, +10, 'X');
+						}
+						else 
+						{
+							rotateWing("Top-Left", objTopLeftWing, incrementWingRotation * multiplierWingRotation, event.ctrlKey, 0, 72, +1);
+						}
 						break;
 					case '2':
-						rotateWing("Top-Right", objTopRightWing, incrementWingRotation * multiplierWingRotation, event.ctrlKey, 0, -72, -1);
+						if (event.keyCode >= 96)
+						{
+							resetEngineRotation("1", objMotor1, defaultEngineRotation1, '');
+						}
+						else
+						{
+							rotateWing("Top-Right", objTopRightWing, incrementWingRotation * multiplierWingRotation, event.ctrlKey, 0, -72, -1);
+						}
 						break;
 					case '3':
-						rotateWing("Bottom-Left", objBottomLeftWing, incrementWingRotation * multiplierWingRotation, event.ctrlKey, 0, 75, +1);
+						if (event.keyCode >= 96)
+						{
+							rotateEngine("1", objMotor1, defaultEngineRotation1, incrementEngineRotation, event.ctrlKey, -10, +10, 'Y');
+						}
+						else 
+						{
+							rotateWing("Bottom-Left", objBottomLeftWing, incrementWingRotation * multiplierWingRotation, event.ctrlKey, 0, 75, +1);
+						}
 						break;
 					case '4':
-						rotateWing("Bottom-Right", objBottomRightWing, incrementWingRotation * multiplierWingRotation, event.ctrlKey, 0, -75, -1);
+						if (event.keyCode >= 96)
+						{
+							rotateEngine("2", objMotor2, defaultEngineRotation2, incrementEngineRotation, event.ctrlKey, -10, +10, 'X');
+						}
+						else 
+						{
+							rotateWing("Bottom-Right", objBottomRightWing, incrementWingRotation * multiplierWingRotation, event.ctrlKey, 0, -75, -1);
+						}
 						break;					
 					case '5':
-						rotateWing("Top-Left", objTopLeftWing, incrementWingRotation * multiplierWingRotation, event.ctrlKey, 0, 72, +1);
-						rotateWing("Top-Right", objTopRightWing, incrementWingRotation * multiplierWingRotation, event.ctrlKey, 0, -72, -1);
+						if (event.keyCode >= 96)
+						{
+							resetEngineRotation("2", objMotor2, defaultEngineRotation2, '');
+						}
+						else 
+						{
+							rotateWing("Top-Left", objTopLeftWing, incrementWingRotation * multiplierWingRotation, event.ctrlKey, 0, 72, +1);
+							rotateWing("Top-Right", objTopRightWing, incrementWingRotation * multiplierWingRotation, event.ctrlKey, 0, -72, -1);
+						}
 						break;
 					case '6':
-						rotateWing("Bottom-Left", objBottomLeftWing, incrementWingRotation * multiplierWingRotation, event.ctrlKey, 0, 75, +1);
-						rotateWing("Bottom-Right", objBottomRightWing, incrementWingRotation * multiplierWingRotation, event.ctrlKey, 0, -75, -1);
+						if (event.keyCode >= 96)
+						{
+							rotateEngine("2", objMotor2, defaultEngineRotation2, incrementEngineRotation, event.ctrlKey, -10, +10, 'Y');
+						}
+						else 
+						{
+							rotateWing("Bottom-Left", objBottomLeftWing, incrementWingRotation * multiplierWingRotation, event.ctrlKey, 0, 75, +1);
+							rotateWing("Bottom-Right", objBottomRightWing, incrementWingRotation * multiplierWingRotation, event.ctrlKey, 0, -75, -1);
+						}
 						break;
 					case '7':
-						rotateWing("Top-Left", objTopLeftWing, incrementWingRotation * multiplierWingRotation, event.ctrlKey, 0, 72, +1);
-						rotateWing("Top-Right", objTopRightWing, incrementWingRotation * multiplierWingRotation, event.ctrlKey, 0, -72, -1);
-						rotateWing("Bottom-Left", objBottomLeftWing, incrementWingRotation * multiplierWingRotation, event.ctrlKey, 0, 75, +1);
-						rotateWing("Bottom-Right", objBottomRightWing, incrementWingRotation * multiplierWingRotation, event.ctrlKey, 0, -75, -1);
+						if (event.keyCode >= 96)
+						{
+							rotateEngine("3", objMotor3, defaultEngineRotation3, incrementEngineRotation, event.ctrlKey, -10, +10, 'X');
+						}
+						else 
+						{
+							rotateWing("Top-Left", objTopLeftWing, incrementWingRotation * multiplierWingRotation, event.ctrlKey, 0, 72, +1);
+							rotateWing("Top-Right", objTopRightWing, incrementWingRotation * multiplierWingRotation, event.ctrlKey, 0, -72, -1);
+							rotateWing("Bottom-Left", objBottomLeftWing, incrementWingRotation * multiplierWingRotation, event.ctrlKey, 0, 75, +1);
+							rotateWing("Bottom-Right", objBottomRightWing, incrementWingRotation * multiplierWingRotation, event.ctrlKey, 0, -75, -1);
+						}
 						break;
 					case '8':
-						objTopLeftWing.rotation.z = 0;
-						objTopRightWing.rotation.z = 0;
-						objBottomLeftWing.rotation.z = 0;
-						objBottomRightWing.rotation.z = 0;
-						rotateWing("Top-Left", objTopLeftWing, THREE.MathUtils.degToRad(40), false, 0, 72, +1);
-						rotateWing("Top-Right", objTopRightWing, THREE.MathUtils.degToRad(40), false, 0, -72, -1);
-						rotateWing("Bottom-Left", objBottomLeftWing, THREE.MathUtils.degToRad(40), false, 0, 75, +1);
-						rotateWing("Bottom-Right", objBottomRightWing, THREE.MathUtils.degToRad(40), false, 0, -75, -1);
+						if (event.keyCode >= 96)
+						{
+							resetEngineRotation("3", objMotor3, defaultEngineRotation3, '');
+						}
+						else
+						{
+							objTopLeftWing.rotation.z = 0;
+							objTopRightWing.rotation.z = 0;
+							objBottomLeftWing.rotation.z = 0;
+							objBottomRightWing.rotation.z = 0;
+							rotateWing("Top-Left", objTopLeftWing, THREE.MathUtils.degToRad(40), false, 0, 72, +1);
+							rotateWing("Top-Right", objTopRightWing, THREE.MathUtils.degToRad(40), false, 0, -72, -1);
+							rotateWing("Bottom-Left", objBottomLeftWing, THREE.MathUtils.degToRad(40), false, 0, 75, +1);
+							rotateWing("Bottom-Right", objBottomRightWing, THREE.MathUtils.degToRad(40), false, 0, -75, -1);
+						}
 						break;
 					case '9':
-						objTopLeftWing.rotation.z = 0;
-						objTopRightWing.rotation.z = 0;
-						objBottomLeftWing.rotation.z = 0;
-						objBottomRightWing.rotation.z = 0;
-						rotateWing("Top-Left", objTopLeftWing, THREE.MathUtils.degToRad(90), false, 0, 72, +1);
-						rotateWing("Top-Right", objTopRightWing, THREE.MathUtils.degToRad(90), false, 0, -72, -1);
-						rotateWing("Bottom-Left", objBottomLeftWing, THREE.MathUtils.degToRad(90), false, 0, 75, +1);
-						rotateWing("Bottom-Right", objBottomRightWing, THREE.MathUtils.degToRad(90), false, 0, -75, -1);
+						if (event.keyCode >= 96)
+						{
+							rotateEngine("3", objMotor3, defaultEngineRotation3, incrementEngineRotation, event.ctrlKey, -10, +10, 'Y');
+						}
+						else 
+						{
+							objTopLeftWing.rotation.z = 0;
+							objTopRightWing.rotation.z = 0;
+							objBottomLeftWing.rotation.z = 0;
+							objBottomRightWing.rotation.z = 0;
+							rotateWing("Top-Left", objTopLeftWing, THREE.MathUtils.degToRad(90), false, 0, 72, +1);
+							rotateWing("Top-Right", objTopRightWing, THREE.MathUtils.degToRad(90), false, 0, -72, -1);
+							rotateWing("Bottom-Left", objBottomLeftWing, THREE.MathUtils.degToRad(90), false, 0, 75, +1);
+							rotateWing("Bottom-Right", objBottomRightWing, THREE.MathUtils.degToRad(90), false, 0, -75, -1);
+						}
 						break;
 					case '0':
 						debugLog( 'Open all Wings' );
@@ -825,22 +897,77 @@
 						objStarShip.position.y = 1;
 						break;					
 					case 'ArrowUp':
-						debugLog( 'StarShip Up' );
-						objStarShip.position.y+=1;
+						if (event.ctrlKey)
+						{
+							debugLog( 'StarShip Move Forward' );
+							objStarShip.position.z-=1;
+						}
+						else
+						{
+							debugLog( 'StarShip Up' );
+							objStarShip.position.y+=1;
+						}
 						break;
 					case 'ArrowDown':
-						debugLog( 'StarShip Down' );
-						if (objStarShip.position.y>0)
-							objStarShip.position.y-=1;
+						if (event.ctrlKey)
+						{
+							debugLog( 'StarShip Move Backward' );
+							objStarShip.position.z+=1;
+						}
+						else
+						{
+							debugLog( 'StarShip Down' );
+							if (objStarShip.position.y>0)
+								objStarShip.position.y-=1;
+						}
 						break;
 					case 'ArrowLeft':
-						debugLog( 'StarShip Rotate Left' );
-						objStarShip.rotation.y+=0.01;
+						if (event.ctrlKey)
+						{
+							debugLog( 'StarShip Move Left' );
+							objStarShip.position.x-=1;
+						}
+						else
+						{
+							debugLog( 'StarShip Rotate Left' );
+							objStarShip.rotation.y+=0.01;
+						}
 						break;
 					case 'ArrowRight':
-						debugLog( 'StarShip Rotate Right' );
-						objStarShip.rotation.y-=0.01;							
+						if (event.ctrlKey)
+						{
+							debugLog( 'StarShip Move Right' );
+							objStarShip.position.x+=1;
+						}
+						else
+						{
+							debugLog( 'StarShip Rotate Right' );
+							objStarShip.rotation.y-=0.01;							
+						}
 						break;
+
+					case 'f':
+						debugLog( 'StarShip shutdown engines' );
+						if (particlesELight!=null)
+							particlesELight.intensity = 0;
+						if (particlesE1!=null)
+							particlesE1.setAddParticles(false);
+						if (particlesE2!=null)
+							particlesE2.setAddParticles(false);
+						if (particlesE3!=null)
+							particlesE3.setAddParticles(false);
+						break;						
+					case 'F':
+						debugLog( 'StarShip fire engines' );
+						if (particlesELight!=null)
+							particlesELight.intensity = 1;
+						if (particlesE1!=null)
+							particlesE1.setAddParticles(true);
+						if (particlesE2!=null)
+							particlesE2.setAddParticles(true);
+						if (particlesE3!=null)
+							particlesE3.setAddParticles(true);
+						break;						
 						
 					case 'g':
 						debugLog( 'StarShip on ground' );
@@ -899,12 +1026,7 @@
 				if (statsVR != null)
 					statsVR.startTimer();
 				
-				if (particlesE1!=null)
-					particlesE1.step(delta * 100);
-				if (particlesE2!=null)
-					particlesE2.step(delta * 100);
-				if (particlesE3!=null)
-					particlesE3.step(delta * 100);
+				updateParticles( delta );
 				
 				renderer.render( scene, camera );
 				
@@ -937,6 +1059,143 @@
 			function updateHelp() {
 				if (renderer.xr.isPresenting)
 					closeHelpScreen();
+			}
+
+			function updateParticles( delta ) {
+				if (particlesE1!=null)
+					particlesE1.step(delta * 100);
+				if (particlesE2!=null)
+					particlesE2.step(delta * 100);
+				if (particlesE3!=null)
+					particlesE3.step(delta * 100);
+					
+				if (particlesELight!=null)				
+					if (particlesELight.intensity!=0)
+						particlesELight.intensity = 0.25 + Math.random();
+			}
+
+			function generateEnginesParticleSystem( object ) {
+				debugLog("Generate Engines ParticleSystem");
+				scene.updateMatrixWorld(true);
+				var position = new THREE.Vector3();
+				var rotation = new THREE.Vector3();
+				// Particles - E1				
+				objMotor1.getWorldPosition(position);
+				objMotor1.getWorldDirection(rotation);				
+				defaultEngineRotation1 = objMotor1.rotation.clone();
+				debugLog("Engine001 World Position: "+position.x+" "+position.y+" "+position.z);						
+				debugLog("Engine001 World Rotation: "+rotation.x+" "+rotation.y+" "+rotation.z);
+				debugLog("Engine001 Local Rotation: "+defaultEngineRotation1.x+" "+defaultEngineRotation1.y+" "+defaultEngineRotation1.z);
+				var orientation = new THREE.Group();
+				orientation.position.set(0, 0, -25);
+				orientation.rotation.set(-defaultEngineRotation1.x,0,0);				
+				orientation.scale.set(10,10,10);
+				objMotor1.add(orientation);
+				particlesE1 = new ParticleSystem({ parent: orientation, camera: camera });											
+				
+				// Particles - E2
+				objMotor2.getWorldPosition(position);
+				objMotor2.getWorldDirection(rotation);
+				defaultEngineRotation2 = objMotor2.rotation.clone();
+				debugLog("Engine002 World Position: "+position.x+" "+position.y+" "+position.z);
+				debugLog("Engine002 World Rotation: "+rotation.x+" "+rotation.y+" "+rotation.z);
+				debugLog("Engine002 Local Rotation: "+defaultEngineRotation2.x+" "+defaultEngineRotation2.y+" "+defaultEngineRotation2.z);
+				var orientation = new THREE.Group();																																												
+				orientation.position.set(0, 0, -25);
+				orientation.rotation.set(-defaultEngineRotation2.x, 0, 0);				
+				orientation.scale.set(10,10,10);
+				objMotor2.add(orientation);
+				particlesE2 = new ParticleSystem({ parent: orientation, camera: camera });												
+				
+				// Particles - E3
+				objMotor3.getWorldPosition(position);
+				objMotor3.getWorldDirection(rotation);
+				defaultEngineRotation3 = objMotor3.rotation.clone();
+				debugLog("Engine003 World Position: "+position.x+" "+position.y+" "+position.z);
+				debugLog("Engine003 World Rotation: "+rotation.x+" "+rotation.y+" "+rotation.z);
+				debugLog("Engine003 Local Rotation: "+defaultEngineRotation3.x+" "+defaultEngineRotation3.y+" "+defaultEngineRotation3.z);
+				var orientation = new THREE.Group();																																												
+				orientation.position.set(0, 0, -25);
+				orientation.rotation.set(-defaultEngineRotation3.x, 0, 0);				
+				orientation.scale.set(10,10,10);
+				objMotor3.add(orientation);
+				particlesE3 = new ParticleSystem({ parent: orientation, camera: camera });												
+				
+				// Light
+				particlesELight = new THREE.PointLight(0xff0000, 0, 32);				
+				particlesELight.position.set(0,1,0);				
+				particlesELight.intensity = 1;
+				object.add(particlesELight);
+			}
+			
+			function resetEngineRotation(id, mesh, defaultEngineRotation, axis) {
+				if (mesh != null)
+				{
+					switch (axis)
+					{
+						case 'X':
+							mesh.rotation.x = defaultEngineRotation.x;
+							break;
+						case 'Y':
+							mesh.rotation.y = defaultEngineRotation.y;
+							break;
+						case 'Z':
+							mesh.rotation.z = defaultEngineRotation.z;
+							break;
+						default:
+							mesh.rotation.x = defaultEngineRotation.x;
+							mesh.rotation.y = defaultEngineRotation.y;
+							mesh.rotation.z = defaultEngineRotation.z;
+							break;
+					}								
+					lastEngineRotated = null;
+					lastEngineRotatedAxis = '';
+					lastEngineRotatedDefaultRotation = null;
+					debugLog( "Reset rotation Engine " + id + ' on axis ' + axis);				
+					debugLog( "Engine Local Rotation: "+defaultEngineRotation.x+" "+defaultEngineRotation.y+" "+defaultEngineRotation.z);
+				}
+			};
+			
+			function rotateEngine(id, mesh, defaultEngineRotation, increment, reverse, minAngle, maxAngle, axis) {
+				if (reverse)
+					increment = -increment;					
+				var radAngle;
+				var desp = 0;
+				switch (axis)
+				{
+					case 'X':
+						radAngle = mesh.rotation.x;
+						desp = -90; // Mesh is rotated 90 degrees clockwise
+						break;
+					case 'Y':
+						radAngle = mesh.rotation.y;
+						break;
+					case 'Z': // Not used
+						radAngle = mesh.rotation.z;
+						break;
+				}								
+				var finalAngle = THREE.MathUtils.radToDeg(radAngle + increment);
+				if (finalAngle < minAngle+desp) 
+					finalAngle = minAngle+desp;
+				if (finalAngle > maxAngle+desp) 
+					finalAngle = maxAngle+desp;				
+				radAngle = THREE.MathUtils.degToRad(finalAngle);
+				switch (axis)
+				{
+					case 'X':
+						mesh.rotation.x = radAngle;
+						break;
+					case 'Y':
+						mesh.rotation.y = radAngle;
+						break;
+					case 'Z':
+						mesh.rotation.z = radAngle;
+						break;
+				}				
+				lastEngineRotated = mesh;
+				lastEngineRotatedAxis = axis;
+				lastEngineRotatedDefaultRotation = defaultEngineRotation;
+				debugLog( id + ' Engine rotation on ' + axis + ' axis to ' + finalAngle + ' degrees');
 			}
 			
 			function rotateWing(id, mesh, increment, reverse, minAngle, maxAngle, dir) {
