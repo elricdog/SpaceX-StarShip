@@ -6,12 +6,13 @@ if (url.startsWith("https://127.0.0.1"))
 	console.log("Setting Environment Configurations for development");
 	_debugStats = true;
 	_debugShadow = false;
-	_debugDimensionGrids = true;
+	_debugDimensionGrids = false;
 	_debugCubeReference = true;
 	_debugHumanReference = false;
 	_debugDragonReference = true;
 	_debugLog = true;
-	_debugFixedCameras = true;
+	_debugFixedCameras = false;
+	_debugShowWingsAxis = false;
 
 	_controlsType = "map";
 	_hideHelpInitially = true;			
@@ -28,6 +29,7 @@ else
 	_debugDragonReference = true;
 	_debugLog = false;
 	_debugFixedCameras = false;
+	_debugShowWingsAxis = false;
 
 	_controlsType = "orbit";
 	_hideHelpInitially = false;

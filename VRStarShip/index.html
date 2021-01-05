@@ -53,6 +53,9 @@
 						<li>e - Toggle statistics visibility.</li>
 						<li>F - StarShip fire engines.</li>
 						<li>f - StarShip shutdown engines.</li>
+						<li>CTRL + F1 - Toggle Engine 1 on/off.</li>
+						<li>CTRL + F2 - Toggle Engine 2 on/off.</li>
+						<li>CTRL + F3 - Toggle Engine 3 on/off.</li>
 						<li>S - Reset Engines rotation.</li>
 						<li>s - Reset Last Engine rotation.</li>						
 						<li>NUMPAD 1 - Rotate Engine 1 X Axis (use CTRL to reverse).</li>
@@ -381,31 +384,48 @@
 					texture.dispose();					
 					applyEnvironmentMapToStarShip(envMap.texture, -1);
 				} );	
+
+				// Loaders FBX / GLTF
+				const loaderFBX = new FBXLoader(loadingManager);
+				const loaderGLTF = new GLTFLoader(loadingManager);
+				const dracoLoader = new DRACOLoader(loadingManager);
+				dracoLoader.setDecoderPath( './three.js/three.js-master/examples/js/libs/draco/gltf/' );
+				loaderGLTF.setDRACOLoader( dracoLoader );
 				
-				// Load StarShip mesh
-  				const loader = new FBXLoader(loadingManager);								
-				loader.load(
-					'./models/StarShip-SN8.fbx', 
+				// Load StarShip mesh 								
+				loaderGLTF.setPath( './models/' );																	
+				loaderGLTF.load(
+					'StarShip-SN8.glb', 
 					// called when the resource is loaded
-					function ( object ) {
+					function ( gltf ) {
+						var object = gltf.scene;													
 						debugLog( 'StarShip objects: ' );
 						object.traverse(function(child) {
 								if (child instanceof THREE.Mesh) {
 									debugLog( '- ' + child.name );
-									// get StarShip rotation objects
+									
+									child.castShadow = true;
+									child.receiveShadow = true;
+									child.material = material.clone();
+									
+									// get StarShip special objects
 									switch (child.name)
 									{
 										case "101_Left_canard":
 											objTopLeftWing = child;
+											adaptWingObject(child);
 											break;
 										case "111_Right_canard":
 											objTopRightWing = child;
+											adaptWingObject(child);
 											break;
 										case "121_Left_Aft_Wing":
 											objBottomLeftWing = child;
+											adaptWingObject(child);
 											break;
 										case "131_Right_Aft_Wing":
 											objBottomRightWing = child;
+											adaptWingObject(child);
 											break;
 										case "7_Raptor_Engine001":
 											objMotor1 = child;
@@ -417,19 +437,19 @@
 											objMotor3 = child;
 											break;
 									}									
-									child.castShadow = true;
-									child.receiveShadow = true;
-									child.material = material.clone();
 									
 									intersectableObjects.push(child);
 								} 
-								else if (child instanceof THREE.Camera)
+								else if (child instanceof THREE.PerspectiveCamera)
 								{
-									debugLog( '- Camera found ' + child.name );									
-									
-									child.near = 0.1;
-									child.far = 2500;
-									child.rotation.y += THREE.MathUtils.degToRad(-90); // Cameras are rotated 90 degrees
+									debugLog( '-- Camera found ' + child.name );
+									debugLog( '-- Camera Fov: ' + child.fov );
+									debugLog( '-- Camera Aspect: ' + child.aspect );
+									debugLog( '-- Camera Zoom: ' + child.zoom );
+									debugLog( '-- Camera Near: ' + child.near );
+									debugLog( '-- Camera Far: ' + child.far );
+									debugLog( '-- Camera Rotation: ' + rotation2String(child.rotation) );
+																						
 									camerasFixedArray.push(child);									
 									
 									if (_debugFixedCameras)
@@ -459,7 +479,7 @@
 				if (_debugHumanReference)
 				{
 					// Load Human reference
-					loader.load(
+					loaderFBX.load(
 						'./models/BaseHuman.fbx', 
 						// called when the resource is loaded
 						function ( object ) {
@@ -488,14 +508,8 @@
 				{
 					// Load Dragon reference
 					const roughnessMipmapper = new RoughnessMipmapper( renderer );
-					const loader2 = new GLTFLoader(loadingManager);
-					loader2.setPath( './models/dragon/' );					
-					
-					const dracoLoader = new DRACOLoader(loadingManager);
-					dracoLoader.setDecoderPath( './three.js/examples/js/libs/draco/gltf/' );
-					loader2.setDRACOLoader( dracoLoader );
-				
-					loader2.load(
+					loaderGLTF.setPath( './models/dragon/' );									
+					loaderGLTF.load(
 						'scene.gltf', 
 						// called when the resource is loaded
 						function ( gltf ) {
@@ -523,7 +537,7 @@
 				}				
 				
 				// Load controller panel
-				loader.load(
+				loaderFBX.load(
 					'./models/Controller.fbx', 
 					// called when the resource is loaded
 					function ( object ) {
@@ -682,6 +696,11 @@
 				SCREEN_HEIGHT = window.innerHeight;
 				camera.aspect = window.innerWidth / window.innerHeight;
 				camera.updateProjectionMatrix();
+				if (currentCamera!=null)
+				{
+					currentCamera.aspect = window.innerWidth / window.innerHeight;
+					currentCamera.updateProjectionMatrix();
+				}
 				if (typeof controls.handleResize === 'function')
 					controls.handleResize();
 				renderer.setSize( window.innerWidth, window.innerHeight );				
@@ -708,6 +727,10 @@
 				
 				// Add ENTER VR button
 				document.body.appendChild( VRButton.createButton( renderer ) );				
+			}
+			
+			function rotation2String(vec) {
+				return "X: " + THREE.MathUtils.radToDeg(vec.x) + " Y: " + THREE.MathUtils.radToDeg(vec.y) + " Z: " + THREE.MathUtils.radToDeg(vec.z);
 			}
 			
 			function debugLog( text ) {
@@ -754,15 +777,11 @@
 				
 					case 'R':
 						debugLog( 'Reset Wings rotation' );
-						objTopLeftWing.rotation.z = 0;
-						objTopRightWing.rotation.z = 0;
-						objBottomLeftWing.rotation.z = 0;
-						objBottomRightWing.rotation.z = 0;
+						resetWingsRotation();
 						break;
 					case 'r':
 						debugLog( 'Reset Last Wing rotation' );
-						if (lastWingRotated != null)
-							lastWingRotated.rotation.z = 0;
+						resetWingRotation(lastWingRotated);
 						break;
 					case 'M':
 						debugLog( 'Wing rotation increased' );
@@ -810,7 +829,7 @@
 					case '3':
 						if (event.keyCode >= 96)
 						{
-							rotateEngine("1", objMotor1, defaultEngineRotation1, incrementEngineRotation, event.ctrlKey, -10, +10, 'Y');
+							rotateEngine("1", objMotor1, defaultEngineRotation1, incrementEngineRotation, event.ctrlKey, -10, +10, 'Z');
 						}
 						else 
 						{
@@ -841,7 +860,7 @@
 					case '6':
 						if (event.keyCode >= 96)
 						{
-							rotateEngine("2", objMotor2, defaultEngineRotation2, incrementEngineRotation, event.ctrlKey, -10, +10, 'Y');
+							rotateEngine("2", objMotor2, defaultEngineRotation2, incrementEngineRotation, event.ctrlKey, -10, +10, 'Z');
 						}
 						else 
 						{
@@ -869,10 +888,7 @@
 						}
 						else
 						{
-							objTopLeftWing.rotation.z = 0;
-							objTopRightWing.rotation.z = 0;
-							objBottomLeftWing.rotation.z = 0;
-							objBottomRightWing.rotation.z = 0;
+							resetWingsRotation();
 							rotateWing("Top-Left", objTopLeftWing, THREE.MathUtils.degToRad(40), false, 0, 72, +1);
 							rotateWing("Top-Right", objTopRightWing, THREE.MathUtils.degToRad(40), false, 0, -72, -1);
 							rotateWing("Bottom-Left", objBottomLeftWing, THREE.MathUtils.degToRad(40), false, 0, 75, +1);
@@ -882,14 +898,11 @@
 					case '9':
 						if (event.keyCode >= 96)
 						{
-							rotateEngine("3", objMotor3, defaultEngineRotation3, incrementEngineRotation, event.ctrlKey, -10, +10, 'Y');
+							rotateEngine("3", objMotor3, defaultEngineRotation3, incrementEngineRotation, event.ctrlKey, -10, +10, 'Z');
 						}
 						else 
 						{
-							objTopLeftWing.rotation.z = 0;
-							objTopRightWing.rotation.z = 0;
-							objBottomLeftWing.rotation.z = 0;
-							objBottomRightWing.rotation.z = 0;
+							resetWingsRotation();
 							rotateWing("Top-Left", objTopLeftWing, THREE.MathUtils.degToRad(90), false, 0, 72, +1);
 							rotateWing("Top-Right", objTopRightWing, THREE.MathUtils.degToRad(90), false, 0, -72, -1);
 							rotateWing("Bottom-Left", objBottomLeftWing, THREE.MathUtils.degToRad(90), false, 0, 75, +1);
@@ -898,10 +911,7 @@
 						break;
 					case '0':
 						debugLog( 'Open all Wings' );
-						objTopLeftWing.rotation.z = 0;
-						objTopRightWing.rotation.z = 0;
-						objBottomLeftWing.rotation.z = 0;
-						objBottomRightWing.rotation.z = 0;
+						resetWingsRotation();
 						break;
 
 					case 'C':
@@ -979,10 +989,23 @@
 							particlesELight.intensity = 1;
 						if (particlesE1!=null)
 							particlesE1.setAddParticles(true);
-						if (particlesE2!=null)
+						if (particlesE2!=nuhll)
 							particlesE2.setAddParticles(true);
 						if (particlesE3!=null)
 							particlesE3.setAddParticles(true);
+						break;						
+
+					case 'F1':						
+						if (event.ctrlKey)
+							toggleEngineParticlesOnOff("1", particlesE1);
+						break;						
+					case 'F2':						
+						if (event.ctrlKey)
+							toggleEngineParticlesOnOff("2", particlesE2);
+						break;						
+					case 'F3':						
+						if (event.ctrlKey)
+							toggleEngineParticlesOnOff("3", particlesE3);
 						break;						
 						
 					case 'g':
@@ -1023,10 +1046,10 @@
 						break;
 						
 					case 'v':			
-						if (cameraFixedIndex!=null)
-						{
-							debugLog( 'Switching to fixed camera ' + cameraFixedIndex);
+						if (camerasFixedArray!=null)
+						{							
 							currentCamera = camerasFixedArray[cameraFixedIndex];
+							debugLog( 'Switching to fixed camera (' + cameraFixedIndex+ ') ' + currentCamera.name);
 							currentCamera.aspect = window.innerWidth / window.innerHeight;
 							currentCamera.updateProjectionMatrix();							
 							cameraFixedIndex++;
@@ -1123,12 +1146,11 @@
 				objMotor1.getWorldDirection(rotation);				
 				defaultEngineRotation1 = objMotor1.rotation.clone();
 				debugLog("Engine001 World Position: "+position.x+" "+position.y+" "+position.z);						
-				debugLog("Engine001 World Rotation: "+rotation.x+" "+rotation.y+" "+rotation.z);
-				debugLog("Engine001 Local Rotation: "+defaultEngineRotation1.x+" "+defaultEngineRotation1.y+" "+defaultEngineRotation1.z);
+				debugLog("Engine001 World Rotation: "+rotation2String(rotation));
+				debugLog("Engine001 Local Rotation: "+rotation2String(defaultEngineRotation1));
 				var orientation = new THREE.Group();
-				orientation.position.set(0, 0, -25);
-				orientation.rotation.set(-defaultEngineRotation1.x,0,0);				
-				orientation.scale.set(10,10,10);
+				orientation.scale.set(0,5,0);
+				orientation.position.set(0, -22, 0);
 				objMotor1.add(orientation);
 				particlesE1 = new ParticleSystem({ parent: orientation, camera: camera });											
 				
@@ -1137,12 +1159,11 @@
 				objMotor2.getWorldDirection(rotation);
 				defaultEngineRotation2 = objMotor2.rotation.clone();
 				debugLog("Engine002 World Position: "+position.x+" "+position.y+" "+position.z);
-				debugLog("Engine002 World Rotation: "+rotation.x+" "+rotation.y+" "+rotation.z);
-				debugLog("Engine002 Local Rotation: "+defaultEngineRotation2.x+" "+defaultEngineRotation2.y+" "+defaultEngineRotation2.z);
-				var orientation = new THREE.Group();																																												
-				orientation.position.set(0, 0, -25);
-				orientation.rotation.set(-defaultEngineRotation2.x, 0, 0);				
-				orientation.scale.set(10,10,10);
+				debugLog("Engine002 World Rotation: "+rotation2String(rotation));
+				debugLog("Engine002 Local Rotation: "+rotation2String(defaultEngineRotation2));
+				var orientation = new THREE.Group();																																																
+				orientation.scale.set(0,5,0);
+				orientation.position.set(0, -22, 0);
 				objMotor2.add(orientation);
 				particlesE2 = new ParticleSystem({ parent: orientation, camera: camera });												
 				
@@ -1151,12 +1172,11 @@
 				objMotor3.getWorldDirection(rotation);
 				defaultEngineRotation3 = objMotor3.rotation.clone();
 				debugLog("Engine003 World Position: "+position.x+" "+position.y+" "+position.z);
-				debugLog("Engine003 World Rotation: "+rotation.x+" "+rotation.y+" "+rotation.z);
-				debugLog("Engine003 Local Rotation: "+defaultEngineRotation3.x+" "+defaultEngineRotation3.y+" "+defaultEngineRotation3.z);
+				debugLog("Engine003 World Rotation: "+rotation2String(rotation));
+				debugLog("Engine003 Local Rotation: "+rotation2String(defaultEngineRotation3));
 				var orientation = new THREE.Group();																																												
-				orientation.position.set(0, 0, -25);
-				orientation.rotation.set(-defaultEngineRotation3.x, 0, 0);				
-				orientation.scale.set(10,10,10);
+				orientation.scale.set(0,5,0);
+				orientation.position.set(0, -22, 0);
 				objMotor3.add(orientation);
 				particlesE3 = new ParticleSystem({ parent: orientation, camera: camera });												
 				
@@ -1165,6 +1185,19 @@
 				particlesELight.position.set(0,1,0);				
 				particlesELight.intensity = 1;
 				object.add(particlesELight);
+			}
+
+			function toggleEngineParticlesOnOff(id, particles) {			
+				debugLog( 'StarShip toggle Engine' + id);
+				if (particles!=null)
+				{
+					particles.setAddParticles(!particles.getAddParticles());									
+					if (particlesELight!=null)
+					{
+						var anyON = particlesE1.getAddParticles() || particlesE3.getAddParticles() || particlesE3.getAddParticles();
+						particlesELight.intensity = (anyON)?1:0;
+					}
+				}
 			}
 			
 			function resetEngineRotation(id, mesh, defaultEngineRotation, axis) {
@@ -1191,7 +1224,7 @@
 					lastEngineRotatedAxis = '';
 					lastEngineRotatedDefaultRotation = null;
 					debugLog( "Reset rotation Engine " + id + ' on axis ' + axis);				
-					debugLog( "Engine Local Rotation: "+defaultEngineRotation.x+" "+defaultEngineRotation.y+" "+defaultEngineRotation.z);
+					debugLog( "Engine Local Rotation: "+rotation2String(defaultEngineRotation));
 				}
 			};
 			
@@ -1199,25 +1232,23 @@
 				if (reverse)
 					increment = -increment;					
 				var radAngle;
-				var desp = 0;
 				switch (axis)
 				{
 					case 'X':
 						radAngle = mesh.rotation.x;
-						desp = -90; // Mesh is rotated 90 degrees clockwise
 						break;
 					case 'Y':
 						radAngle = mesh.rotation.y;
 						break;
-					case 'Z': // Not used
+					case 'Z':
 						radAngle = mesh.rotation.z;
 						break;
 				}								
 				var finalAngle = THREE.MathUtils.radToDeg(radAngle + increment);
-				if (finalAngle < minAngle+desp) 
-					finalAngle = minAngle+desp;
-				if (finalAngle > maxAngle+desp) 
-					finalAngle = maxAngle+desp;				
+				if (finalAngle < minAngle) 
+					finalAngle = minAngle;
+				if (finalAngle > maxAngle) 
+					finalAngle = maxAngle;				
 				radAngle = THREE.MathUtils.degToRad(finalAngle);
 				switch (axis)
 				{
@@ -1236,11 +1267,43 @@
 				lastEngineRotatedDefaultRotation = defaultEngineRotation;
 				debugLog( id + ' Engine rotation on ' + axis + ' axis to ' + finalAngle + ' degrees');
 			}
+
+			function adaptWingObject(wing) {			
+				if (_debugShowWingsAxis)
+				{
+					const axesHelper = new THREE.AxesHelper( 50 );
+					wing.add( axesHelper );											
+					wing.material.transparent = true;
+					wing.material.opacity = 0.5;
+				}
+				wing.userData.CurrentRotation = 0;
+			}
+
+			function resetWingsRotation() {			
+				objTopLeftWing.rotateY(-objTopLeftWing.userData.CurrentRotation); 
+				objTopLeftWing.userData.CurrentRotation = 0;
+				objTopRightWing.rotateY(-objTopRightWing.userData.CurrentRotation); 
+				objTopRightWing.userData.CurrentRotation = 0;
+				objBottomLeftWing.rotateY(-objBottomLeftWing.userData.CurrentRotation); 
+				objBottomLeftWing.userData.CurrentRotation = 0;
+				objBottomRightWing.rotateY(-objBottomRightWing.userData.CurrentRotation); 
+				objBottomRightWing.userData.CurrentRotation = 0;
+			}
+			
+			function resetWingRotation(wing) {
+				if (wing != null)
+				{
+					wing.rotateY(-wing.userData.CurrentRotation); 
+					wing.userData.CurrentRotation = 0;
+				}
+			}
 			
 			function rotateWing(id, mesh, increment, reverse, minAngle, maxAngle, dir) {
 				if (reverse)
-					increment = -increment;
-				var finalAngle = THREE.MathUtils.radToDeg(mesh.rotation.z + (dir * increment));
+					increment = -increment;						
+				var finalIncrement = dir * increment;
+				var angle = THREE.MathUtils.radToDeg(mesh.userData.CurrentRotation + finalIncrement);
+				var finalAngle = angle;
 				if (dir > 0)
 				{
 					if (finalAngle < minAngle) 
@@ -1255,9 +1318,11 @@
 					if (finalAngle < maxAngle) 
 						finalAngle = maxAngle;
 				}
-				mesh.rotation.z = THREE.MathUtils.degToRad(finalAngle);
+				finalIncrement -= THREE.MathUtils.degToRad(angle-finalAngle);	
+				mesh.userData.CurrentRotation += finalIncrement;
+				mesh.rotateY(finalIncrement);
 				lastWingRotated = mesh;
-				debugLog( id + ' Wing rotation to ' + THREE.MathUtils.radToDeg(lastWingRotated.rotation.z) + ' degrees');
+				debugLog( id + ' Wing rotation to ' + THREE.MathUtils.radToDeg(mesh.userData.CurrentRotation) + ' degrees');
 			}
 
 			function applyEnvironmentMapToStarShip( texture, intensity ) {

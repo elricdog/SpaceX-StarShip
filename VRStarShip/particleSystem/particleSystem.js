@@ -244,6 +244,10 @@ export default class ParticleSystem {
   {
 	this._addParticlesEnabled = enabled;
   }
+  getAddParticles()
+  {
+	return this._addParticlesEnabled;
+  }
   
   setVisible(visible)
   {
