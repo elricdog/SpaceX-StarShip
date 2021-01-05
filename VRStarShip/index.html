@@ -47,8 +47,8 @@
 						<li>CTRL + Arrow Right - StarShip Move Right.</li>						
 						<li>G - StarShip on space environment.</li>
 						<li>g - StarShip on ground.</li>
-						<li>H - Shadows on.</li>
-						<li>h - Shadows off.</li>
+						<li>O - Shadows on.</li>
+						<li>o - Shadows off.</li>
 						<li>E - Toggle VR statistics visibility.</li>
 						<li>e - Toggle statistics visibility.</li>
 						<li>F - StarShip fire engines.</li>
@@ -141,12 +141,12 @@
 			
 			const _debugStats = true;
 			const _debugShadow = false;
-			const _debugDimensionGrids = false;
+			const _debugDimensionGrids = true;
 			const _debugCubeReference = true;
-			const _debugHumanReference = false;
+			const _debugHumanReference = true;
 			const _debugDragonReference = true;
 			const _debugLog = true;
-			const _debugFixedCameras = true;
+			const _debugFixedCameras = false;
 
 			const _controlsType = "orbit";
 			const _hideHelpInitially = true;
@@ -1014,14 +1014,14 @@
 						applyEnvironmentMapToStarShip(textureCube2, 1);
 						break;
 						
-					case 'h':
+					case 'o':
 						debugLog( 'Shadows off' );
 						dirLight.castShadow = false;
 						renderer.shadowMap.enabled = false;
 						renderer.shadowMap.autoUpdate = false;
 						renderer.shadowMap.needsUpdate = true;						
 						break;
-					case 'H':
+					case 'O':
 						debugLog( 'Shadows on' );
 						dirLight.castShadow = true;
 						renderer.shadowMap.autoUpdate = true;
