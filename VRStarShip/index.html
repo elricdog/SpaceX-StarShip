@@ -1066,23 +1066,22 @@
 			function animate()
 			{
 				renderer.setAnimationLoop( function () {
-					controls.update(clock.getDelta());	
+					const delta = clock.getDelta();
+					
+					controls.update(delta);	
 					updateIntersections();
+					updateParticles( delta );
 					updateLocomotion();
 					updateStats();
 					updateHelp();
-					render();	
+					render(delta);	
 				} );
 			}
 
-			function render() {
-				const delta = clock.getDelta();
-								
+			function render( delta ) {												
 				if (statsVR != null)
 					statsVR.startTimer();
-				
-				updateParticles( delta );
-				
+								
 				if (currentCamera != null)
 				{
 					renderer.render( scene, currentCamera );
@@ -1124,12 +1123,13 @@
 			}
 
 			function updateParticles( delta ) {
+				delta = delta;
 				if (particlesE1!=null)
-					particlesE1.step(delta * 100);
+					particlesE1.step(delta);
 				if (particlesE2!=null)
-					particlesE2.step(delta * 100);
+					particlesE2.step(delta);
 				if (particlesE3!=null)
-					particlesE3.step(delta * 100);
+					particlesE3.step(delta);
 					
 				if (particlesELight!=null)				
 					if (particlesELight.intensity!=0)

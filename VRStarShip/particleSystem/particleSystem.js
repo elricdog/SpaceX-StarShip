@@ -61,7 +61,7 @@ export default class ParticleSystem {
   constructor(params) {
     const uniforms = {
         diffuseTexture: {
-            value: new THREE.TextureLoader().load('./models/particles/particle1.png')
+            value: new THREE.TextureLoader().load('./models/particles/particle2.png')
         },
         pointMultiplier: {
             value: window.innerHeight / (2.0 * Math.tan(0.5 * 60.0 * Math.PI / 180.0))
@@ -197,7 +197,7 @@ export default class ParticleSystem {
       p.colour.copy(this._colourSpline.Get(t));
 
       p.position.add(p.velocity.clone().multiplyScalar(timeElapsed));
-
+	  
       const drag = p.velocity.clone();
       drag.multiplyScalar(timeElapsed * 0.1);
       drag.x = Math.sign(p.velocity.x) * Math.min(Math.abs(drag.x), Math.abs(p.velocity.x));
@@ -229,28 +229,31 @@ export default class ParticleSystem {
   }
 
   step(timeElapsed) {	
+	timeElapsed *= 10;
     this._AddParticles(timeElapsed);
     this._UpdateParticles(timeElapsed);
 	this._SortParticles();
     this._UpdateGeometry();
   }
 
-  setSort(sorted)
-  {
+  setSort(sorted) {
 	this._sorted = sorted;
   }
-
-  setAddParticles(enabled)
-  {
+  getSort() {
+	  return this._sorted;
+  }
+  
+  setAddParticles(enabled) {
 	this._addParticlesEnabled = enabled;
   }
-  getAddParticles()
-  {
+  getAddParticles() {
 	return this._addParticlesEnabled;
   }
   
-  setVisible(visible)
-  {
+  setVisible(visible) {
 	this._points.visible = visible;
+  }
+  getVisible() {
+	return this._points.visible;
   }
 }		
