@@ -64,6 +64,8 @@
 						<li>NUMPAD 7 - Rotate Engine 3 X Axis (use CTRL to reverse).</li>
 						<li>NUMPAD 8 - Reset Rotation Engine 3.</li>
 						<li>NUMPAD 9 - Rotate Engine 3 Y Axis (use CTRL to reverse).</li>						
+						<li>V - Restore to default camera.</li>
+						<li>v - Cycle fixed cameras.</li>						
 					</ul>
 					<h3><b>&nbsp;In VR:</b></h3>
 					<ul>						
@@ -124,6 +126,7 @@
 
 			let container;
 			let scene, renderer;
+			let currentCamera = null;
 			let camera, cameraHolder;
 			let controls;
 			let stats = null;
@@ -143,6 +146,7 @@
 			const _debugHumanReference = false;
 			const _debugDragonReference = true;
 			const _debugLog = true;
+			const _debugFixedCameras = true;
 
 			const _controlsType = "orbit";
 			const _hideHelpInitially = true;
@@ -194,6 +198,9 @@
 			let lastEngineRotated;
 			let lastEngineRotatedAxis;
 			let lastEngineRotatedDefaultRotation; 
+			
+			const camerasFixedArray = [];
+			let cameraFixedIndex = 0;
 			
 			init();
 			animate();
@@ -421,6 +428,21 @@
 									child.material = material.clone();
 									
 									intersectableObjects.push(child);
+								} 
+								else if (child instanceof THREE.Camera)
+								{
+									debugLog( '- Camera found ' + child.name );									
+									
+									child.near = 0.1;
+									child.far = 2500;
+									child.rotation.y += THREE.MathUtils.degToRad(-90); // Cameras are rotated 90 degrees
+									camerasFixedArray.push(child);									
+									
+									if (_debugFixedCameras)
+									{
+										const helper = new THREE.CameraHelper( child );
+										scene.add( helper );
+									}																		
 								}
 							});									
 						objStarShip = object;
@@ -1005,6 +1027,22 @@
 						renderer.shadowMap.autoUpdate = true;
 						renderer.shadowMap.enabled = true;
 						break;
+						
+					case 'v':			
+						if (cameraFixedIndex!=null)
+						{
+							debugLog( 'Switching to fixed camera ' + cameraFixedIndex);
+							currentCamera = camerasFixedArray[cameraFixedIndex];
+							currentCamera.aspect = window.innerWidth / window.innerHeight;
+							currentCamera.updateProjectionMatrix();							
+							cameraFixedIndex++;
+							cameraFixedIndex%=camerasFixedArray.length;
+						}
+						break;
+					case 'V':
+						debugLog( 'Default camera restored' );
+						currentCamera = null;
+						break;
 				} 
 			}					
 						
@@ -1028,7 +1066,14 @@
 				
 				updateParticles( delta );
 				
-				renderer.render( scene, camera );
+				if (currentCamera != null)
+				{
+					renderer.render( scene, currentCamera );
+				}
+				else 
+				{
+					renderer.render( scene, camera );
+				}
 				
 				if (statsVR != null)
 					statsVR.endTimer();					
