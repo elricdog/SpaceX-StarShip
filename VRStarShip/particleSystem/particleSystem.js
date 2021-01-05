@@ -200,6 +200,7 @@ export default class ParticleSystem {
       p.velocity.sub(drag);
     }
 
+	/*
     this._particles.sort((a, b) => {
       const d1 = this._camera.position.distanceTo(a.position);
       const d2 = this._camera.position.distanceTo(b.position);
@@ -214,6 +215,7 @@ export default class ParticleSystem {
 
       return 0;
     });
+	*/
   }
 
   step(timeElapsed) {
