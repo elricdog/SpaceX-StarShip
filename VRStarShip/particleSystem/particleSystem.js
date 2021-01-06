@@ -24,7 +24,7 @@ void main() {
   gl_FragColor = texture2D(diffuseTexture, coords) * vColour;
 }`;
 
-class LinearSpline {
+export class LinearSpline {
   constructor(lerp) {
     this._points = [];
     this._lerp = lerp;
@@ -90,6 +90,8 @@ export default class ParticleSystem {
 
 	this._sorted = false;
 	this._addParticlesEnabled = true;
+	
+	this._timeFactor = 10.0;
 	
     this._points = new THREE.Points(this._geometry, this._material);
 	
@@ -229,7 +231,7 @@ export default class ParticleSystem {
   }
 
   step(timeElapsed) {	
-	timeElapsed *= 10;
+	timeElapsed = this._timeFactor * timeElapsed;
     this._AddParticles(timeElapsed);
     this._UpdateParticles(timeElapsed);
 	this._SortParticles();
@@ -255,5 +257,43 @@ export default class ParticleSystem {
   }
   getVisible() {
 	return this._points.visible;
+  }
+  
+  /* Example:
+    alphaSpline = new LinearSpline((t, a, b) => {
+      return a + t * (b - a);
+    });
+    alphaSpline.AddPoint(0.0, 0.25);
+    alphaSpline.AddPoint(0.1, 1.0);
+    alphaSpline.AddPoint(0.6, 1.0);
+    alphaSpline.AddPoint(1.0, 0.0);
+  */
+  setAlphaSpline(alphaSpline) {
+	  this._alphaSpline = alphaSpline;
+  }
+
+  /* Example:
+    colourSpline = new LinearSpline((t, a, b) => {
+      const c = a.clone();
+      return c.lerp(b, t);
+    });
+    colourSpline.AddPoint(0.0, new THREE.Color(0xFF0000));
+	colourSpline.AddPoint(0.5, new THREE.Color(0xFF8080));
+    colourSpline.AddPoint(1.0, new THREE.Color(0xFFFF80));
+  */
+  setColourSpline(colourSpline) {
+	  this._colourSpline = colourSpline;
+  }
+  
+  /* Example:
+    sizeSpline = new LinearSpline((t, a, b) => {
+      return a + t * (b - a);
+    });
+    sizeSpline.AddPoint(0.0, 1.5);
+    sizeSpline.AddPoint(0.5, 2.0);
+    sizeSpline.AddPoint(1.0, 1.0);  
+  */
+  setSizeSpline(sizeSpline) {
+	  this._sizeSpline = sizeSpline;
   }
 }		

@@ -109,6 +109,8 @@
 			}		
 		</script>
 				
+		<script src="./tweenmax/TweenMax.min.js"></script>
+		
 		<script src="./env.js"></script> 
 		
 		<script type="module">				
@@ -144,6 +146,7 @@
 			let statsVR = null;
 			let statsVRVisibility;
 			let sunLight, spaceLight, dirLight;
+			let windowHalfX, windowHalfY;
 			
 			let plane;
 			let material, envMap;
@@ -198,6 +201,10 @@
 			
 			const camerasFixedArray = [];
 			let cameraFixedIndex = 0;
+
+			let mouseRaycaster = new THREE.Raycaster();
+			let mouseRaycasterCheck = false;
+			const mouseIntersectableObjects = [];
 			
 			init();
 			animate();
@@ -541,10 +548,19 @@
 					'./models/Controller.fbx', 
 					// called when the resource is loaded
 					function ( object ) {
+						debugLog( 'Controller Panel objects: ' );
 						object.traverse(function(child) {
 								if (child instanceof THREE.Mesh) {
+									debugLog( '- ' + child.name );
+									
 									child.castShadow = true;
 									child.receiveShadow = false;
+									
+									if (child.name.includes("Button"))
+									{
+										debugLog( '- Button command found' );
+										mouseIntersectableObjects.push(child);
+									}
 								}
 							});					
 						scene.add( object );
@@ -667,7 +683,10 @@
 				
 				// Keyboard
 				document.addEventListener("keydown", onDocumentKeyDown, false);
-				
+				// Mouse
+				document.addEventListener('pointerdown', onDocumentMouseDown, false);
+				document.addEventListener('touchstart', onDocumentTouchStart, false);
+				document.addEventListener('touchmove', onDocumentTouchMove, false);							
 				// Window
 				window.addEventListener( 'resize', onWindowResize, false );
 
@@ -694,6 +713,8 @@
 			function onWindowResize() {
 				SCREEN_WIDTH = window.innerWidth;
 				SCREEN_HEIGHT = window.innerHeight;
+				windowHalfX = window.innerWidth / 2;
+				windowHalfY = window.innerHeight / 2;				
 				camera.aspect = window.innerWidth / window.innerHeight;
 				camera.updateProjectionMatrix();
 				if (currentCamera!=null)
@@ -1435,8 +1456,153 @@
 			function updateIntersections() {
 				cleanIntersected();
 				intersectObjects( controller1 );
-				intersectObjects( controller2 );			
+				intersectObjects( controller2 );							
+				checkMouseIntersect();
 			}
+			
+			let mouseVectors = new THREE.Vector2();
+			let targetRotationX = 0;
+			let targetRotationY = 1;
+			let targetRotationXOnMouseDown = 0;
+			let targetRotationYOnMouseDown = 0;
+			let mouseX = 0;
+			let mouseXOnMouseDown = 0;
+			let mouseY = 0;
+			let mouseYOnMouseDown = 0;
+			
+			function checkMouseIntersect() {
+				if (mouseRaycasterCheck) {
+					debugLog("Check if Mouse intersects something...");
+					mouseRaycaster.setFromCamera(mouseVectors, camera);
+
+					var intersected = mouseRaycaster.intersectObjects(mouseIntersectableObjects, true);
+					if (intersected.length > 0) {
+						checkMouseHit(intersected);
+					}
+					mouseRaycasterCheck = false;
+				}				
+			}
+			
+			function checkMouseHit(intersections) {
+				var i = 0,
+				l = intersections.length;
+				if (l > 0) {
+					const intersection = intersections[0];
+					const object = intersection.object;
+					moveButton(object);
+					/* ToDo
+					if (_soundsLoaded) {
+						stopSound();
+						playSound(soundButtonClickBuffer);
+					}
+					*/
+				}
+			}			
+			
+			function moveButton(object) {
+				TweenMax.killAll();
+				TweenMax.to(object.position, 0.25, {
+					ease: Expo.easeInOut,
+					y: -object.geometry.boundingBox.getSize.y,
+					yoyo: true,
+					repeat: 1
+				});
+			}			
+						
+			function onDocumentMouseDown(event) {
+				debugLog("On MouseDown");
+				
+				event.preventDefault();
+				document.addEventListener('mousemove', onDocumentMouseMove, false);
+				document.addEventListener('mouseup', onDocumentMouseUp, false);
+				document.addEventListener('mouseout', onDocumentMouseOut, false);
+				mouseXOnMouseDown = event.clientX - windowHalfX;
+				mouseYOnMouseDown = event.clientY - windowHalfY;
+				targetRotationXOnMouseDown = targetRotationX;
+				targetRotationYOnMouseDown = targetRotationY;
+				mouseVectors.x = (event.clientX / window.innerWidth) * 2 - 1;
+				mouseVectors.y = -(event.clientY / window.innerHeight) * 2 + 1;
+				mouseRaycasterCheck = true;
+			}
+
+			function onDocumentMouseMove(event) {
+				mouseX = event.clientX - windowHalfX;
+				mouseY = event.clientY - windowHalfY;
+				targetRotationX = targetRotationXOnMouseDown + (mouseX - mouseXOnMouseDown) * 0.02;
+				targetRotationY = targetRotationYOnMouseDown + (mouseY - mouseYOnMouseDown) * 0.02;
+			}
+
+			function onDocumentMouseUp() {
+				document.removeEventListener('mousemove', onDocumentMouseMove, false);
+				document.removeEventListener('mouseup', onDocumentMouseUp, false);
+				document.removeEventListener('mouseout', onDocumentMouseOut, false);
+				mouseRaycasterCheck = false;
+			}
+
+			function onDocumentMouseOut() {
+				document.removeEventListener('mousemove', onDocumentMouseMove, false);
+				document.removeEventListener('mouseup', onDocumentMouseUp, false);
+				document.removeEventListener('mouseout', onDocumentMouseOut, false);
+			}
+
+			function onDocumentTouchStart(event) {
+				if (event.touches.length === 1) {
+					event.preventDefault();
+					mouseXOnMouseDown = event.touches[0].pageX - windowHalfX;
+					mouseYOnMouseDown = event.touches[0].pageY - windowHalfY;
+					targetRotationXOnMouseDown = targetRotationX;
+					targetRotationYOnMouseDown = targetRotationY;
+				}
+			}
+
+			function onDocumentTouchMove(event) {
+				if (event.touches.length === 1) {
+					event.preventDefault();
+					mouseX = event.touches[0].pageX - windowHalfX;
+					mouseY = event.touches[0].pageY - windowHalfY;
+					targetRotationX = targetRotationXOnMouseDown + (mouseX - mouseXOnMouseDown) * 0.05;
+					targetRotationY = targetRotationYOnMouseDown + (mouseY - mouseYOnMouseDown) * 0.05;
+				}
+			}
+	
+			/* // ToDo
+			function loadSound(url) {
+				var request = new XMLHttpRequest();
+
+				request.open('GET', url, true);
+				request.responseType = 'arraybuffer';
+
+				request.onload = function () {
+					audioContext.decodeAudioData(request.response, function (buffer) {
+						alertBuffer = buffer;
+						alertLoaded = true;
+					});
+				};
+
+				request.send();
+			}
+
+			function stopSound() {
+				if (audioSource) {
+					audioSource.stop();
+				}
+			}
+
+			function playSound(buffer) {
+				audioSource = audioContext.createBufferSource();
+				audioSource.buffer = buffer;
+				audioSource.connect(audioContext.destination);
+				audioSource.start(0);
+			}
+			
+			let audioContext;
+			let audioSource;
+			
+			window.AudioContext = window.AudioContext || window.webkitAudioContext;
+			audioContext = new AudioContext();
+
+			loadAlertSound('https://s3-us-west-2.amazonaws.com/s.cdpn.io/8223/alert.mp3');
+			*/	
 			
 			function onSelectStart( event ) {
 				const controller = event.target;
