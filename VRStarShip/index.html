@@ -1153,6 +1153,9 @@
 				orientation.position.set(0, -22, 0);
 				objMotor1.add(orientation);
 				particlesE1 = new ParticleSystem({ parent: orientation, camera: camera });											
+				objMotor1.userData.CurrentRotationX = 0;
+				objMotor1.userData.CurrentRotationY = 0;
+				objMotor1.userData.CurrentRotationZ = 0;
 				
 				// Particles - E2
 				objMotor2.getWorldPosition(position);
@@ -1166,6 +1169,9 @@
 				orientation.position.set(0, -22, 0);
 				objMotor2.add(orientation);
 				particlesE2 = new ParticleSystem({ parent: orientation, camera: camera });												
+				objMotor2.userData.CurrentRotationX = 0;
+				objMotor2.userData.CurrentRotationY = 0;
+				objMotor2.userData.CurrentRotationZ = 0;
 				
 				// Particles - E3
 				objMotor3.getWorldPosition(position);
@@ -1179,6 +1185,9 @@
 				orientation.position.set(0, -22, 0);
 				objMotor3.add(orientation);
 				particlesE3 = new ParticleSystem({ parent: orientation, camera: camera });												
+				objMotor3.userData.CurrentRotationX = 0;
+				objMotor3.userData.CurrentRotationY = 0;
+				objMotor3.userData.CurrentRotationZ = 0;
 				
 				// Light
 				particlesELight = new THREE.PointLight(0xff0000, 0, 32);				
@@ -1206,18 +1215,24 @@
 					switch (axis)
 					{
 						case 'X':
-							mesh.rotation.x = defaultEngineRotation.x;
+							mesh.rotate.x = defaultEngineRotation.x;
+							mesh.userData.CurrentRotationX = 0;
 							break;
 						case 'Y':
 							mesh.rotation.y = defaultEngineRotation.y;
+							mesh.userData.CurrentRotationY = 0;
 							break;
 						case 'Z':
 							mesh.rotation.z = defaultEngineRotation.z;
+							mesh.userData.CurrentRotationZ = 0;
 							break;
 						default:
 							mesh.rotation.x = defaultEngineRotation.x;
 							mesh.rotation.y = defaultEngineRotation.y;
 							mesh.rotation.z = defaultEngineRotation.z;
+							mesh.userData.CurrentRotationX = 0;
+							mesh.userData.CurrentRotationY = 0;
+							mesh.userData.CurrentRotationZ = 0;
 							break;
 					}								
 					lastEngineRotated = null;
@@ -1235,13 +1250,13 @@
 				switch (axis)
 				{
 					case 'X':
-						radAngle = mesh.rotation.x;
+						radAngle = mesh.userData.CurrentRotationX;
 						break;
 					case 'Y':
-						radAngle = mesh.rotation.y;
+						radAngle = mesh.userData.CurrentRotationY;
 						break;
 					case 'Z':
-						radAngle = mesh.rotation.z;
+						radAngle = mesh.userData.CurrentRotationZ;
 						break;
 				}								
 				var finalAngle = THREE.MathUtils.radToDeg(radAngle + increment);
@@ -1253,13 +1268,16 @@
 				switch (axis)
 				{
 					case 'X':
-						mesh.rotation.x = radAngle;
+						mesh.rotation.x = defaultEngineRotation.x + radAngle;
+						mesh.userData.CurrentRotationX = radAngle;
 						break;
 					case 'Y':
-						mesh.rotation.y = radAngle;
+						mesh.rotation.y = defaultEngineRotation.y + radAngle;
+						mesh.userData.CurrentRotationY = radAngle;
 						break;
 					case 'Z':
-						mesh.rotation.z = radAngle;
+						mesh.rotation.z = defaultEngineRotation.z + radAngle;
+						mesh.userData.CurrentRotationZ = radAngle;
 						break;
 				}				
 				lastEngineRotated = mesh;
