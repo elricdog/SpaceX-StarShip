@@ -16,6 +16,27 @@ if (url.startsWith("https://127.0.0.1"))
 
 	_controlsType = "map";
 	_hideHelpInitially = true;			
+	_shadowsOffInitially = false;
+	_enginesOffInitially = false;
+}
+else if (url.startsWith("https://192.168.1.2"))
+{
+	// Environment Configurations for test on Oculus Quest 2
+	console.log("Environment Configurations for test on Oculus Quest 2");
+	_debugStats = true;
+	_debugShadow = false;
+	_debugDimensionGrids = false;
+	_debugCubeReference = false;
+	_debugHumanReference = false;
+	_debugDragonReference = false;
+	_debugLog = false;
+	_debugFixedCameras = false;
+	_debugShowWingsAxis = false;
+
+	_controlsType = "orbit";
+	_hideHelpInitially = false;			
+	_shadowsOffInitially = true;
+	_enginesOffInitially = true;
 }
 else
 {	
@@ -33,4 +54,6 @@ else
 
 	_controlsType = "orbit";
 	_hideHelpInitially = false;
+	_shadowsOffInitially = false;
+	_enginesOffInitially = true;
 }

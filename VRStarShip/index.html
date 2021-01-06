@@ -472,6 +472,14 @@
 						
 						// Particles	
 						generateEnginesParticleSystem(object);
+						
+						if (_enginesOffInitially)
+						{
+							particlesE1.setAddParticles(false);
+							particlesE2.setAddParticles(false);
+							particlesE3.setAddParticles(false);
+							particlesELight.intensity = 0;
+						}
 					},
 					// called as loading progresses
 					function ( xhr ) {
@@ -581,17 +589,17 @@
 									
 				// VR controllers
 				controller1 = renderer.xr.getController( 0 );
-				controller1.addEventListener( 'selectstart', onSelectStart );
-				controller1.addEventListener( 'selectend', onSelectEnd );
-				controller1.addEventListener( 'squeezestart', onSqueezeStart );
-				controller1.addEventListener( 'squeezeend', onSqueezeEnd );
+				controller1.addEventListener( 'squeezestart', onGrabStart );
+				controller1.addEventListener( 'squeezeend', onGrabEnd );
+				controller1.addEventListener( 'selectstart', onTeletransportLocomotionStart );
+				controller1.addEventListener( 'selectend', onTeletransportLocomotionEnd );
 				cameraHolder.add( controller1 );
 				
 				controller2 = renderer.xr.getController( 1 );
-				controller2.addEventListener( 'selectstart', onSelectStart );
-				controller2.addEventListener( 'selectend', onSelectEnd );
-				controller2.addEventListener( 'squeezestart', onSqueezeStart );
-				controller2.addEventListener( 'squeezeend', onSqueezeEnd );
+				controller2.addEventListener( 'squeezestart', onGrabStart );
+				controller2.addEventListener( 'squeezeend', onGrabEnd );
+				controller2.addEventListener( 'selectstart', onTeletransportLocomotionStart );
+				controller2.addEventListener( 'selectend', onTeletransportLocomotionEnd );
 				cameraHolder.add( controller2 );
 				
 				const controllerModelFactory = new XRControllerModelFactory();
@@ -732,11 +740,19 @@
 			}
 
 			function onTransitionStart( event ) {
-				// Hide help?
+				// Hide help initially?
 				if (_hideHelpInitially)
 				{
 					closeHelpScreen();					
 				}
+				// Shadows Off initially?
+				if (_shadowsOffInitially)
+				{
+					dirLight.castShadow = false;
+					renderer.shadowMap.enabled = false;
+					renderer.shadowMap.autoUpdate = false;
+					renderer.shadowMap.needsUpdate = true;						
+				}				
 			}
 			
 			function onTransitionEnd( event ) {
@@ -1412,7 +1428,7 @@
 				}
 			}
 			
-			function onSqueezeStart( event ) {
+			function onTeletransportLocomotionStart( event ) {
 				guidingController = event.target;
 				guidelight.intensity = 1;
 				guidingController.add(guideline);
@@ -1420,7 +1436,7 @@
 				scene.add(guidesprite);
 			}
 
-			function onSqueezeEnd( event ) {
+			function onTeletransportLocomotionEnd( event ) {
 				if (guidingController === event.target) 
 				{
 					// first work out vector from feet to cursor
@@ -1677,7 +1693,7 @@
 			loadAlertSound('https://s3-us-west-2.amazonaws.com/s.cdpn.io/8223/alert.mp3');
 			*/	
 			
-			function onSelectStart( event ) {
+			function onGrabStart( event ) {
 				const controller = event.target;
 				if (guidingController === controller) 
 				{
@@ -1698,7 +1714,7 @@
 				}
 			}
 
-			function onSelectEnd( event ) {
+			function onGrabEnd( event ) {
 				const controller = event.target;
 				if ( controller.userData.selected !== undefined ) {
 					const object = controller.userData.selected;
