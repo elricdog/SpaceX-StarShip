@@ -8,7 +8,7 @@ if (url.startsWith("https://127.0.0.1"))
 	_debugShadow = false;
 	_debugDimensionGrids = false;
 	_debugCubeReference = true;
-	_debugHumanReference = false;
+	_debugHumanReference = true;
 	_debugDragonReference = true;
 	_debugLog = true;
 	_debugFixedCameras = false;

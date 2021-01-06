@@ -562,8 +562,12 @@
 										mouseIntersectableObjects.push(child);
 									}
 								}
-							});					
-						scene.add( object );
+							});		
+						var controllerPanels = new THREE.Group();
+						controllerPanels.position.set(-10, 0, 2);
+						controllerPanels.scale.set(0.1, 0.1, 0.1);
+						controllerPanels.add(object);
+						scene.add( controllerPanels );
 					},
 					// called as loading progresses
 					function ( xhr ) {
@@ -1478,8 +1482,7 @@
 					var intersected = mouseRaycaster.intersectObjects(mouseIntersectableObjects, true);
 					if (intersected.length > 0) {
 						checkMouseHit(intersected);
-					}
-					mouseRaycasterCheck = false;
+					}					
 				}				
 			}
 			
@@ -1490,6 +1493,7 @@
 					const intersection = intersections[0];
 					const object = intersection.object;
 					moveButton(object);
+					executeButton(object);
 					/* ToDo
 					if (_soundsLoaded) {
 						stopSound();
@@ -1499,14 +1503,79 @@
 				}
 			}			
 			
+			let tweenButton = null;
+			
 			function moveButton(object) {
-				TweenMax.killAll();
-				TweenMax.to(object.position, 0.25, {
+				if (tweenButton!=null)				
+					if (tweenButton.isActive()) return;
+				debugLog("Move Button " + object.name);								
+				tweenButton = TweenMax.to(object.position, 0.05, {
 					ease: Expo.easeInOut,
-					y: -object.geometry.boundingBox.getSize.y,
+					y:object.position.y-0.1,
 					yoyo: true,
 					repeat: 1
 				});
+			}			
+			
+			function executeButton(object)
+			{
+				switch (object.name)
+				{
+					case "LeftTop_IncreaseButton": 
+						rotateWing("Top-Left", objTopLeftWing, incrementWingRotation * multiplierWingRotation, false, 0, 72, +1);
+						break;					
+					case "LeftTop_DecreaseButton": 
+						rotateWing("Top-Left", objTopLeftWing, incrementWingRotation * multiplierWingRotation, true, 0, 72, +1);
+						break;
+					case "LeftTop_ResetButton": 
+						resetWingRotation(objTopLeftWing);
+						break;
+
+					case "RightTop_IncreaseButton": 
+						rotateWing("Top-Right", objTopRightWing, incrementWingRotation * multiplierWingRotation, false, 0, -72, -1);
+						break;					
+					case "RightTop_DecreaseButton": 
+						rotateWing("Top-Right", objTopRightWing, incrementWingRotation * multiplierWingRotation, true, 0, -72, -1);
+						break;
+					case "RightTop_ResetButton": 
+						resetWingRotation(objTopRightWing);
+						break;
+
+					case "LeftBottom_IncreaseButton": 
+						rotateWing("Bottom-Left", objBottomLeftWing, incrementWingRotation * multiplierWingRotation, false, 0, 75, +1);
+						break;					
+					case "LeftBottom_DecreaseButton": 
+						rotateWing("Bottom-Left", objBottomLeftWing, incrementWingRotation * multiplierWingRotation, true, 0, 75, +1);
+						break;
+					case "LeftBottom_ResetButton": 
+						resetWingRotation(objBottomLeftWing);
+						break;
+
+					case "RightBottom_IncreaseButton": 
+						rotateWing("Bottom-Right", objBottomRightWing, incrementWingRotation * multiplierWingRotation, false, 0, -75, -1);
+						break;					
+					case "RightBottom_DecreaseButton": 
+						rotateWing("Bottom-Right", objBottomRightWing, incrementWingRotation * multiplierWingRotation, true, 0, -75, -1);
+						break;
+					case "RightBottom_ResetButton": 
+						resetWingRotation(objBottomRightWing);
+						break;
+				}
+			}
+			
+			function simulateKeyEvent(character) {
+			  var evt = document.createEvent("KeyboardEvent");
+			  (evt.initKeyEvent || evt.initKeyboardEvent)("keypress", true, true, window,
+								0, 0, 0, 0,
+								0, character.charCodeAt(0)) 
+			  var canceled = !body.dispatchEvent(evt);
+			  if(canceled) {
+				// A handler called preventDefault
+				alert("canceled");
+			  } else {
+				// None of the handlers called preventDefault
+				alert("not canceled");
+			  }
 			}			
 						
 			function onDocumentMouseDown(event) {
@@ -1514,7 +1583,7 @@
 				
 				event.preventDefault();
 				document.addEventListener('mousemove', onDocumentMouseMove, false);
-				document.addEventListener('mouseup', onDocumentMouseUp, false);
+				document.addEventListener('pointerup', onDocumentMouseUp, false);
 				document.addEventListener('mouseout', onDocumentMouseOut, false);
 				mouseXOnMouseDown = event.clientX - windowHalfX;
 				mouseYOnMouseDown = event.clientY - windowHalfY;
@@ -1526,6 +1595,8 @@
 			}
 
 			function onDocumentMouseMove(event) {
+				debugLog("On MouseMove");
+				
 				mouseX = event.clientX - windowHalfX;
 				mouseY = event.clientY - windowHalfY;
 				targetRotationX = targetRotationXOnMouseDown + (mouseX - mouseXOnMouseDown) * 0.02;
@@ -1533,15 +1604,17 @@
 			}
 
 			function onDocumentMouseUp() {
+				debugLog("On MouseUp");
 				document.removeEventListener('mousemove', onDocumentMouseMove, false);
-				document.removeEventListener('mouseup', onDocumentMouseUp, false);
+				document.removeEventListener('pointerup', onDocumentMouseUp, false);
 				document.removeEventListener('mouseout', onDocumentMouseOut, false);
 				mouseRaycasterCheck = false;
 			}
 
 			function onDocumentMouseOut() {
+				debugLog("On MouseOut");
 				document.removeEventListener('mousemove', onDocumentMouseMove, false);
-				document.removeEventListener('mouseup', onDocumentMouseUp, false);
+				document.removeEventListener('pointerup', onDocumentMouseUp, false);
 				document.removeEventListener('mouseout', onDocumentMouseOut, false);
 			}
 
