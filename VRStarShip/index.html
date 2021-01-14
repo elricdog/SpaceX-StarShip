@@ -28,7 +28,7 @@
 			<div id="help">
 				<center>
 				<br>
-				<button class="myButton" onclick="closeHelpScreen()">Press here to close</button><br>
+				<button id="buttonCloseHelp1" class="myButton">Press here to close</button><br>
 				<h1><b>---=== Help ===---</b></h1>
 				</center>
 				<p>
@@ -97,7 +97,7 @@
 				<br>
 				<center>
 				StarShip Simulator by Elric / Anaconda<br>
-				<button class="myButton" onclick="closeHelpScreen()">Press here to close</button><br>
+				<button id="buttonCloseHelp2" class="myButton">Press here to close</button><br>
 				</center>
 				<br>
 			</div>
@@ -220,6 +220,11 @@
 				var btnHP = document.getElementById('buttonHighPoly');
 				btnLP.onclick = function(){ selectOptionLowPoly(); }
 				btnHP.onclick = function(){ selectOptionHighPoly(); }
+				
+				var help1 = document.getElementById('buttonCloseHelp1');
+				var help2 = document.getElementById('buttonCloseHelp2');
+				help1.onclick = function(){ closeHelpScreen(); }				
+				help2.onclick = function(){ closeHelpScreen(); }				
 			
 				closeHelpScreen();				
 				closeLoadingScreen();

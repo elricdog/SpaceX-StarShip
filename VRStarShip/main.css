@@ -92,6 +92,7 @@ a, button, input, select {
 	background-color: #000000;
 	opacity: 1;
  	transition: 1s opacity;
+	visibility: hidden;
 }
 
 #loading-screen.fade-out {
@@ -171,6 +172,7 @@ a, button, input, select {
     height: 60%;
     background-color: #7F7F7F7F;
 	overflow-y: scroll;
+	visibility: hidden;
 }
 
 #options { 
@@ -180,6 +182,7 @@ a, button, input, select {
     width: 70%;
     height: auto;
     background-color: #7F7F1F1F;
+	visibility: visible;
 }
 
 progress::-moz-progress-bar { background: #55D3BA; }
