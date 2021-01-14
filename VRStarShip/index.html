@@ -543,7 +543,8 @@
 								}
 							});									
 						objStarShip = object;
-						applyEnvironmentMapToStarShip(envMap.texture, -1);
+						if (envMap.texture!=null)
+							applyEnvironmentMapToStarShip(envMap.texture, -1);
 						scene.add( object );
 						
 						// Particles	
