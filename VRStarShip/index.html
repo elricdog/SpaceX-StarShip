@@ -10,6 +10,21 @@
 	</head>
 	<body>
 		<div id="canvas">
+			<div id="options">
+				<center>
+				<br>
+				StarShip Simulator by Elric / Anaconda<br>
+				<h1><b>---=== Options ===---</b></h1>
+				<button id="buttonLowPoly" class="myButton">Low Poly version</button><br>
+				<br>
+				<button id="buttonHighPoly" class="myButton">High Poly version</button><br>
+				<br>
+				<div id="sfcxdk9e7e626k4t67ey5afp5zgm8ukty5p"></div>
+				<script type="text/javascript" src="https://counter8.stat.ovh/private/counter.js?c=xdk9e7e626k4t67ey5afp5zgm8ukty5p&down=async" async></script>
+				</center>
+				<br>
+			</div>
+		
 			<div id="help">
 				<center>
 				<br>
@@ -82,8 +97,6 @@
 				<br>
 				<center>
 				StarShip Simulator by Elric / Anaconda<br>
-				<div id="sfcxdk9e7e626k4t67ey5afp5zgm8ukty5p"></div>
-				<script type="text/javascript" src="https://counter8.stat.ovh/private/counter.js?c=xdk9e7e626k4t67ey5afp5zgm8ukty5p&down=async" async></script>
 				<button class="myButton" onclick="closeHelpScreen()">Press here to close</button><br>
 				</center>
 				<br>
@@ -100,15 +113,7 @@
 			</center>
 			<div id="loader"/>
 		</section>
-			
-		<script>
-			function closeHelpScreen()
-			{
-				const helpScreen = document.getElementById( 'help' );
-				helpScreen.style.visibility = "hidden";
-			}		
-		</script>
-				
+							
 		<script src="./tweenmax/TweenMax.min.js"></script>
 		
 		<script src="./env.js"></script> 
@@ -147,6 +152,8 @@
 			let statsVRVisibility;
 			let sunLight, spaceLight, dirLight;
 			let windowHalfX, windowHalfY;
+			
+			let starshipModelFilename = "StarShip-SN8.glb";
 			
 			let plane;
 			let material, envMap;
@@ -206,10 +213,74 @@
 			let mouseRaycasterCheck = false;
 			const mouseIntersectableObjects = [];
 			
-			init();
-			animate();
+			// Members			
+			function main()
+			{
+				var btnLP = document.getElementById('buttonLowPoly');
+				var btnHP = document.getElementById('buttonHighPoly');
+				btnLP.onclick = function(){ selectOptionLowPoly(); }
+				btnHP.onclick = function(){ selectOptionHighPoly(); }
+			
+				closeHelpScreen();				
+				closeLoadingScreen();
+				showOptionsScreen();
+			}
+			
+			function showLoadingScreen()
+			{
+				const loadingScreen = document.getElementById( 'loading-screen' );
+				loadingScreen.style.visibility = "visible";
+			}		
+			function closeLoadingScreen()
+			{
+				const loadingScreen = document.getElementById( 'loading-screen' );
+				loadingScreen.style.visibility = "hidden";
+			}
+			
+			function showOptionsScreen()
+			{
+				const optionsScreen = document.getElementById( 'options' );
+				optionsScreen.style.visibility = "visible";
+			}
+			function closeOptionsScreen()
+			{
+				const optionsScreen = document.getElementById( 'options' );
+				optionsScreen.style.visibility = "hidden";
+			}
+			
+			function showHelpScreen()
+			{
+				const helpScreen = document.getElementById( 'help' );
+				helpScreen.style.visibility = "visible";
+			}		
+			function closeHelpScreen()
+			{
+				const helpScreen = document.getElementById( 'help' );
+				helpScreen.style.visibility = "hidden";
+			}		
 
-			function init() {
+			function selectOptionLowPoly()
+			{
+				showLoadingScreen();
+				closeOptionsScreen();
+				starshipModelFilename = "StarShip-SN8-LowPoly.glb";
+				init();
+			}			
+			function selectOptionHighPoly()
+			{
+				showLoadingScreen();
+				closeOptionsScreen();
+				starshipModelFilename = "StarShip-SN8.glb";
+				init();
+			}
+			
+			function init()
+			{
+				init3D();
+				animate();
+			}
+			
+			function init3D() {
 				// Web Document
 				container = document.getElementById( 'canvas' );
 
@@ -402,7 +473,7 @@
 				// Load StarShip mesh 								
 				loaderGLTF.setPath( './models/' );																	
 				loaderGLTF.load(
-					'StarShip-SN8.glb', 
+					starshipModelFilename, 
 					// called when the resource is loaded
 					function ( gltf ) {
 						var object = gltf.scene;													
@@ -744,6 +815,10 @@
 				if (_hideHelpInitially)
 				{
 					closeHelpScreen();					
+				}
+				else
+				{
+					showHelpScreen();
 				}
 				// Shadows Off initially?
 				if (_shadowsOffInitially)
@@ -1753,6 +1828,8 @@
 					object.material.emissive.r = 0;
 				}
 			}		
+		
+			main();
 			
 		</script>
 	</body>

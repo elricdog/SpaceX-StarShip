@@ -1,4 +1,4 @@
-htlm, body {
+html, body {
 	overflow: hidden;
 	margin: 0;
 	width: 100%;
@@ -102,7 +102,7 @@ a, button, input, select {
     display: block;
     position: relative;
     left: 50%;
-    top: 30%;
+    top: 15%;
     width: 150px;
     height: 150px;
     margin: -75px 0 0 -75px;
@@ -171,6 +171,15 @@ a, button, input, select {
     height: 60%;
     background-color: #7F7F7F7F;
 	overflow-y: scroll;
+}
+
+#options { 
+    position:absolute;
+	left: 15%;
+	top: 15%;
+    width: 70%;
+    height: auto;
+    background-color: #7F7F1F1F;
 }
 
 progress::-moz-progress-bar { background: #55D3BA; }
