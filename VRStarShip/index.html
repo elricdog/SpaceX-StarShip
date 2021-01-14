@@ -93,6 +93,14 @@
 						<li>Use a controller gamepad - to move arround.</li>
 						<li>Use a keyboard to execute non VR key commands.</li>
 					</ul>
+					<h3><b>&nbsp;Developer:</b></h3>
+					<ul>						
+						<li>i - Output renderer information.</li>
+						<li>J - Hide reference objects.</li>
+						<li>j - Show reference objects.</li>
+						<li>D - Hide dragon.</li>
+						<li>d - Show dragon.</li>
+					</ul>
 				</p>
 				<br>
 				<center>
@@ -164,6 +172,10 @@
 			let SCREEN_WIDTH = window.innerWidth;
 			let SCREEN_HEIGHT = window.innerHeight;			
 			let lightShadowMapViewer;
+			
+			let DragonMesh;
+			let HumanMesh;
+			let CubeMesh;
 			
 			let objStarShip;
 			let objTopLeftWing;
@@ -408,6 +420,7 @@
 					cube.position.set( -11.5, 0.5, -0.5 );
 					cube.castShadow = true;
 					cube.receiveShadow = false;
+					CubeMesh = cube;
 					scene.add( cube );
 				}
 				
@@ -543,9 +556,9 @@
 								}
 							});									
 						objStarShip = object;
-						if (envMap.texture!=null)
+						if (envMap!=null)
 							applyEnvironmentMapToStarShip(envMap.texture, -1);
-						scene.add( object );
+						scene.add( object );												
 						
 						// Particles	
 						generateEnginesParticleSystem(object);
@@ -582,8 +595,9 @@
 										child.position.x = -10.5;
 										child.position.z = -0.5;
 									}
-								});					
-							scene.add( object );
+								});		
+							HumanMesh = object;
+							scene.add( object );														
 						},
 						// called as loading progresses
 						function ( xhr ) {
@@ -613,8 +627,9 @@
 										child.position.y = -10.5;
 										child.position.z = 5;
 									}
-								});					
-							scene.add( gltf.scene );
+								});				
+							DragonMesh = gltf.scene;
+							scene.add( gltf.scene );							
 							roughnessMipmapper.dispose();
 						},
 						// called as loading progresses
@@ -652,7 +667,7 @@
 						controllerPanels.position.set(-10, 0, 2);
 						controllerPanels.scale.set(0.1, 0.1, 0.1);
 						controllerPanels.add(object);
-						scene.add( controllerPanels );
+						scene.add( controllerPanels );						
 					},
 					// called as loading progresses
 					function ( xhr ) {
@@ -1181,6 +1196,37 @@
 					case 'V':
 						debugLog( 'Default camera restored' );
 						currentCamera = null;
+						break;
+						
+					// Information of renderer
+					case 'i':
+						console.log( "Scene render.calls: " + renderer.info.render.calls );
+						console.log( "Scene render.triangles: " + renderer.info.render.triangles );
+						console.log( "Scene render.points: " + renderer.info.render.points );
+						console.log( "Scene render.lines: " + renderer.info.render.lines );
+						console.log( "Scene render.frame: " + renderer.info.render.frame );
+						console.log( "Scene geometries: " + renderer.info.memory.geometries );
+						console.log( "Scene textures: " + renderer.info.memory.textures );
+						break;
+					case 'J':
+						if (HumanMesh!=null)
+							HumanMesh.visible = true;
+						if (CubeMesh!=null)
+							CubeMesh.visible = true;
+						break;
+					case 'j':
+						if (HumanMesh!=null)
+							HumanMesh.visible = false;
+						if (CubeMesh!=null)
+							CubeMesh.visible = false;
+						break;
+					case 'D':
+						if (DragonMesh!=null)
+							DragonMesh.visible = true;
+						break;
+					case 'd':
+						if (DragonMesh!=null)
+							DragonMesh.visible = false;
 						break;
 				} 
 			}					
