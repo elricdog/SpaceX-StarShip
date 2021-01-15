@@ -64,7 +64,7 @@ export default class ParticleSystem {
             value: new THREE.TextureLoader().load('./models/particles/particle2.png')
         },
         pointMultiplier: {
-            value: window.innerHeight / (2.0 * Math.tan(0.5 * 60.0 * Math.PI / 180.0))
+            value: Math.max(window.innerWidth, window.innerHeight) / (2.0 * Math.tan(0.5 * 60.0 * Math.PI / 180.0))
         }
     };
 
