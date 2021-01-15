@@ -84,6 +84,8 @@
 						<li>NUMPAD 9 - Rotate Engine 3 Y Axis (use CTRL to reverse).</li>						
 						<li>V - Restore to default camera.</li>
 						<li>v - Cycle fixed cameras.</li>						
+						<li>Q - Big controller panel.</li>
+						<li>q - Human Sized controller panel.</li>						
 					</ul>
 					<h3><b>&nbsp;In VR:</b></h3>
 					<ul>						
@@ -182,6 +184,9 @@
 			let objTopRightWing;
 			let objBottomLeftWing;
 			let objBottomRightWing;
+			
+			let objControllerPanels;
+			let manuallySetControllerPanelsSize = false;
 			
 			const incrementWingRotation = 0.01;		
 			let lastWingRotated;
@@ -624,7 +629,7 @@
 										child.castShadow = true;
 										child.receiveShadow = false;
 										child.position.x = -10.5;
-										child.position.y = -10.5;
+										child.position.y = +4.5;
 										child.position.z = 5;
 									}
 								});				
@@ -656,18 +661,18 @@
 									child.castShadow = true;
 									child.receiveShadow = false;
 									
-									if (child.name.includes("Button"))
+									if (child.name.includes("Button") || child.name.includes("Raptor") || child.name.includes("StarShip"))
 									{
 										debugLog( '- Button command found' );
 										mouseIntersectableObjects.push(child);
 									}
 								}
 							});		
-						var controllerPanels = new THREE.Group();
-						controllerPanels.position.set(-10, 0, 2);
-						controllerPanels.scale.set(0.1, 0.1, 0.1);
-						controllerPanels.add(object);
-						scene.add( controllerPanels );						
+						objControllerPanels = new THREE.Group();
+						objControllerPanels.position.set(-10, 0, 2);
+						objControllerPanels.scale.set(0.1, 0.1, 0.1);
+						objControllerPanels.add(object);
+						scene.add( objControllerPanels );						
 					},
 					// called as loading progresses
 					function ( xhr ) {
@@ -929,6 +934,20 @@
 						multiplierWingRotation = 1;
 						break;
 						
+					case 'Q':
+						debugLog( 'Big controller size' );
+						manuallySetControllerPanelsSize = true;
+						objControllerPanels.position.set(0, 0, 0);
+						objControllerPanels.scale.set(1, 1, 1);						
+						break;
+					case 'q':
+						debugLog( 'Small controller size' );
+						manuallySetControllerPanelsSize = true;
+						objControllerPanels.position.set(-10, 0, 2);
+						objControllerPanels.scale.set(0.1, 0.1, 0.1);
+						break;
+
+						
 					case 'S':
 						debugLog( 'Reset Engines rotation' );
 						resetEngineRotation("1", objMotor1, defaultEngineRotation1, '');
@@ -1093,7 +1112,7 @@
 						else
 						{
 							debugLog( 'StarShip Rotate Left' );
-							objStarShip.rotation.y+=0.01;
+							objStarShip.rotation.y-=0.01;
 						}
 						break;
 					case 'ArrowRight':
@@ -1105,7 +1124,7 @@
 						else
 						{
 							debugLog( 'StarShip Rotate Right' );
-							objStarShip.rotation.y-=0.01;							
+							objStarShip.rotation.y+=0.01;							
 						}
 						break;
 
@@ -1241,6 +1260,7 @@
 					updateParticles( delta );
 					updateLocomotion();
 					updateStats();
+					updateControllerPanels();
 					updateHelp();
 					render(delta);	
 				} );
@@ -1282,6 +1302,23 @@
 					{
 						statsVR.setEnabled(false);
 					}
+				}
+			}
+
+			function updateControllerPanels() {
+				if (manuallySetControllerPanelsSize) return;
+				if (objControllerPanels!=null)
+				{
+					if (renderer.xr.isPresenting)
+					{
+						objControllerPanels.position.set(-10, 0, 2);
+						objControllerPanels.scale.set(0.1, 0.1, 0.1);
+					}
+					else 
+					{
+						objControllerPanels.position.set(0, 0, 0);
+						objControllerPanels.scale.set(1, 1, 1);						
+					}				
 				}
 			}
 			
@@ -1369,6 +1406,32 @@
 				if (particles!=null)
 				{
 					particles.setAddParticles(!particles.getAddParticles());									
+					if (particlesELight!=null)
+					{
+						var anyON = particlesE1.getAddParticles() || particlesE3.getAddParticles() || particlesE3.getAddParticles();
+						particlesELight.intensity = (anyON)?1:0;
+					}
+				}
+			}
+
+			function setEngineParticlesOn(id, particles) {			
+				debugLog( 'StarShip set ON Engine' + id);
+				if (particles!=null)
+				{
+					particles.setAddParticles(true);									
+					if (particlesELight!=null)
+					{
+						var anyON = true;
+						particlesELight.intensity = (anyON)?1:0;
+					}
+				}
+			}
+
+			function setEngineParticlesOff(id, particles) {			
+				debugLog( 'StarShip set OFF Engine' + id);
+				if (particles!=null)
+				{
+					particles.setAddParticles(false);									
 					if (particlesELight!=null)
 					{
 						var anyON = particlesE1.getAddParticles() || particlesE3.getAddParticles() || particlesE3.getAddParticles();
@@ -1654,7 +1717,7 @@
 				debugLog("Move Button " + object.name);								
 				tweenButton = TweenMax.to(object.position, 0.05, {
 					ease: Expo.easeInOut,
-					y:object.position.y-0.1,
+					y:object.position.y-0.2,
 					yoyo: true,
 					repeat: 1
 				});
@@ -1702,6 +1765,121 @@
 						break;
 					case "RightBottom_ResetButton": 
 						resetWingRotation(objBottomRightWing);
+						break;
+
+					case "FoldWingsButton": 
+						resetWingsRotation();
+						rotateWing("Top-Left", objTopLeftWing, THREE.MathUtils.degToRad(90), false, 0, 72, +1);
+						rotateWing("Top-Right", objTopRightWing, THREE.MathUtils.degToRad(90), false, 0, -72, -1);
+						rotateWing("Bottom-Left", objBottomLeftWing, THREE.MathUtils.degToRad(90), false, 0, 75, +1);
+						rotateWing("Bottom-Right", objBottomRightWing, THREE.MathUtils.degToRad(90), false, 0, -75, -1);
+						break;
+					case "UnfoldWingsButton": 
+						resetWingRotation(objTopLeftWing);
+						resetWingRotation(objTopRightWing);
+						resetWingRotation(objBottomLeftWing);
+						resetWingRotation(objBottomRightWing);
+						break;
+						
+					case "Raptor1On":
+						setEngineParticlesOn("1", particlesE1);
+						break;
+					case "Raptor1Off":
+						setEngineParticlesOff("1", particlesE1);
+						break;
+					case "Raptor1Left":
+						rotateEngine("1", objMotor1, defaultEngineRotation1, incrementEngineRotation, false, -10, +10, 'X');
+						break;
+					case "Raptor1Right":
+						rotateEngine("1", objMotor1, defaultEngineRotation1, incrementEngineRotation, true, -10, +10, 'X');
+						break;
+					case "Raptor1Top":
+						rotateEngine("1", objMotor1, defaultEngineRotation1, incrementEngineRotation, false, -10, +10, 'Z');
+						break;
+					case "Raptor1Bottom":
+						rotateEngine("1", objMotor1, defaultEngineRotation1, incrementEngineRotation, true, -10, +10, 'Z');
+						break;
+					case "Raptor1Reset":
+						resetEngineRotation("1", objMotor1, defaultEngineRotation1, '');				
+						break;
+												
+					case "Raptor2On":
+						setEngineParticlesOn("2", particlesE2);
+						break;
+					case "Raptor2Off":
+						setEngineParticlesOff("2", particlesE2);
+						break;
+					case "Raptor2Left":
+						rotateEngine("2", objMotor2, defaultEngineRotation2, incrementEngineRotation, false, -10, +10, 'X');
+						break;
+					case "Raptor2Right":
+						rotateEngine("2", objMotor2, defaultEngineRotation2, incrementEngineRotation, true, -10, +10, 'X');
+						break;
+					case "Raptor2Top":
+						rotateEngine("2", objMotor2, defaultEngineRotation2, incrementEngineRotation, false, -10, +10, 'Z');
+						break;
+					case "Raptor2Bottom":
+						rotateEngine("2", objMotor2, defaultEngineRotation2, incrementEngineRotation, true, -10, +10, 'Z');
+						break;
+					case "Raptor2Reset":
+						resetEngineRotation("2", objMotor2, defaultEngineRotation2, '');				
+						break;
+						
+					case "Raptor3On":
+						setEngineParticlesOn("3", particlesE3);
+						break;
+					case "Raptor3Off":
+						setEngineParticlesOff("3", particlesE3);
+						break;
+					case "Raptor3Left":
+						rotateEngine("3", objMotor3, defaultEngineRotation3, incrementEngineRotation, false, -10, +10, 'X');
+						break;
+					case "Raptor3Right":
+						rotateEngine("3", objMotor3, defaultEngineRotation3, incrementEngineRotation, true, -10, +10, 'X');
+						break;
+					case "Raptor3Top":
+						rotateEngine("3", objMotor3, defaultEngineRotation3, incrementEngineRotation, false, -10, +10, 'Z');
+						break;
+					case "Raptor3Bottom":
+						rotateEngine("3", objMotor3, defaultEngineRotation3, incrementEngineRotation, true, -10, +10, 'Z');
+						break;
+					case "Raptor3Reset":
+						resetEngineRotation("3", objMotor3, defaultEngineRotation3, '');				
+						break;
+						
+					case "StarShipFront":
+						objStarShip.position.z-=1;
+						break;
+					case "StarShipBack":
+						objStarShip.position.z+=1;
+						break;
+					case "StarShipLeft":
+						objStarShip.position.x-=1;
+						break;
+					case "StarShipRight":
+						objStarShip.position.x+=1;
+						break;
+					case "StarShipResetPosition":
+						objStarShip.position.x = 0;
+						objStarShip.position.z = 0;
+						break;
+
+					case "StarShipUp":
+						objStarShip.position.y+=1;
+						break;
+					case "StarShipDown":
+						if (objStarShip.position.y>0)
+							objStarShip.position.y-=1;
+						break;
+					case "StarShipRotateLeft":
+						objStarShip.rotation.y-=0.01;
+						break;
+					case "StarShipRotateRight":
+						objStarShip.rotation.y+=0.01;
+						break;
+					case "StarShipResetFly":
+						objStarShip.rotation.y = 0;
+						objStarShip.position.y = 0;
 						break;
 				}
 			}
