@@ -203,7 +203,7 @@
 			const tempMatrix = new THREE.Matrix4();
 			const intersectableObjects = [];
 			let intersectionParent;
-			
+						
 			const lineSegments = 10;
 			let lineGeometryVertices;
 			const g = new THREE.Vector3(0,-9.8,0);
@@ -664,6 +664,7 @@
 									if (child.name.includes("Button") || child.name.includes("Raptor") || child.name.includes("StarShip"))
 									{
 										debugLog( '- Button command found' );
+										child.material = child.material.clone();
 										mouseIntersectableObjects.push(child);
 									}
 								}
@@ -688,8 +689,8 @@
 				controller1 = renderer.xr.getController( 0 );
 				controller1.addEventListener( 'squeezestart', onGrabStart );
 				controller1.addEventListener( 'squeezeend', onGrabEnd );
-				controller1.addEventListener( 'selectstart', onTeletransportLocomotionStart );
-				controller1.addEventListener( 'selectend', onTeletransportLocomotionEnd );
+				controller1.addEventListener( 'selectstart', onSelectStart );
+				controller1.addEventListener( 'selectend', onSelectEnd );
 				cameraHolder.add( controller1 );
 				
 				controller2 = renderer.xr.getController( 1 );
@@ -819,6 +820,8 @@
 				}
 			}
 
+			// WINDOW
+			
 			function onWindowResize() {
 				SCREEN_WIDTH = window.innerWidth;
 				SCREEN_HEIGHT = window.innerHeight;
@@ -836,6 +839,8 @@
 				renderer.setSize( window.innerWidth, window.innerHeight );				
 			}
 
+			// SPLASHSCREEN
+			
 			function onTransitionStart( event ) {
 				// Hide help initially?
 				if (_hideHelpInitially)
@@ -870,16 +875,22 @@
 				// Add ENTER VR button
 				document.body.appendChild( VRButton.createButton( renderer ) );				
 			}
-			
+
+			// UTILS
+						
 			function rotation2String(vec) {
 				return "X: " + THREE.MathUtils.radToDeg(vec.x) + " Y: " + THREE.MathUtils.radToDeg(vec.y) + " Z: " + THREE.MathUtils.radToDeg(vec.z);
 			}
+			
+			// LOGS 
 			
 			function debugLog( text ) {
 				if (_debugLog)
 					console.log( text );
 			}
-						
+			
+			// KEYBOARD
+			
 			function onDocumentKeyDown(event) {				
 				if ( objStarShip == null ) return;
 				var key = event.key;
@@ -1249,13 +1260,17 @@
 						break;
 				} 
 			}					
-						
+					
+			// RENDER LOOP
+			
 			function animate()
 			{
 				renderer.setAnimationLoop( function () {
 					const delta = clock.getDelta();
 					
 					controls.update(delta);	
+					updateXRGamePadEvents();
+					updateGamePadEvents();
 					updateIntersections();
 					updateParticles( delta );
 					updateLocomotion();
@@ -1286,6 +1301,8 @@
 					lightShadowMapViewer.render( renderer );
 			}
 
+			// STATS
+			
 			function updateStats() {
 				if (stats != null)
 				{
@@ -1304,29 +1321,16 @@
 					}
 				}
 			}
-
-			function updateControllerPanels() {
-				if (manuallySetControllerPanelsSize) return;
-				if (objControllerPanels!=null)
-				{
-					if (renderer.xr.isPresenting)
-					{
-						objControllerPanels.position.set(-10, 0, 2);
-						objControllerPanels.scale.set(0.1, 0.1, 0.1);
-					}
-					else 
-					{
-						objControllerPanels.position.set(0, 0, 0);
-						objControllerPanels.scale.set(1, 1, 1);						
-					}				
-				}
-			}
+			
+			// HELP
 			
 			function updateHelp() {
 				if (renderer.xr.isPresenting)
 					closeHelpScreen();
 			}
 
+			// ENGINE PARTICLES
+			
 			function updateParticles( delta ) {
 				delta = delta;
 				if (particlesE1!=null)
@@ -1440,6 +1444,8 @@
 				}
 			}
 			
+			// ENGINES
+			
 			function resetEngineRotation(id, mesh, defaultEngineRotation, axis) {
 				if (mesh != null)
 				{
@@ -1517,6 +1523,8 @@
 				debugLog( id + ' Engine rotation on ' + axis + ' axis to ' + finalAngle + ' degrees');
 			}
 
+			// WINGS
+			
 			function adaptWingObject(wing) {			
 				if (_debugShowWingsAxis)
 				{
@@ -1574,6 +1582,8 @@
 				debugLog( id + ' Wing rotation to ' + THREE.MathUtils.radToDeg(mesh.userData.CurrentRotation) + ' degrees');
 			}
 
+			// ENVIRONMENT MAP
+			
 			function applyEnvironmentMapToStarShip( texture, intensity ) {
 				if (objStarShip == null) return;
 				debugLog("Setting environment map to StarShip material");
@@ -1586,38 +1596,43 @@
 					}
 				} );
 			}
-						
+
+			// LOCOMOTION
+			
 			function updateLocomotion() {
-				if (guidingController) 
+				if (renderer.xr.isPresenting)
 				{
-					// Controller start position
-					const p = guidingController.getWorldPosition(tempVecP);
+					if (guidingController) 
+					{
+						// Controller start position
+						const p = guidingController.getWorldPosition(tempVecP);
 
-					// Set Vector V to the direction of the controller, at 1m/s
-					const v = guidingController.getWorldDirection(tempVecV);
+						// Set Vector V to the direction of the controller, at 1m/s
+						const v = guidingController.getWorldDirection(tempVecV);
 
-					// Scale the initial velocity to 6m/s
-					v.multiplyScalar(6);
+						// Scale the initial velocity to 6m/s
+						v.multiplyScalar(6);
 
-					// Time for tele ball to hit ground
-					const t = (-v.y  + Math.sqrt(v.y**2 - 2*p.y*g.y))/g.y;
+						// Time for tele ball to hit ground
+						const t = (-v.y  + Math.sqrt(v.y**2 - 2*p.y*g.y))/g.y;
 
-					const vertex = tempVec.set(0,0,0);
-					for (let i=1; i<=lineSegments; i++) {
+						const vertex = tempVec.set(0,0,0);
+						for (let i=1; i<=lineSegments; i++) {
 
-						// set vertex to current position of the virtual ball at time t
-						positionAtT(vertex,i*t/lineSegments,p,v,g);
-						guidingController.worldToLocal(vertex);
-						vertex.toArray(lineGeometryVertices,i*3);
+							// set vertex to current position of the virtual ball at time t
+							positionAtT(vertex,i*t/lineSegments,p,v,g);
+							guidingController.worldToLocal(vertex);
+							vertex.toArray(lineGeometryVertices,i*3);
+						}
+						guideline.geometry.attributes.position.needsUpdate = true;
+						
+						// Place the light and sprite near the end of the poing
+						positionAtT(guidelight.position,t*0.98,p,v,g);
+						positionAtT(guidesprite.position,t*0.98,p,v,g);
 					}
-					guideline.geometry.attributes.position.needsUpdate = true;
-					
-					// Place the light and sprite near the end of the poing
-					positionAtT(guidelight.position,t*0.98,p,v,g);
-					positionAtT(guidesprite.position,t*0.98,p,v,g);
 				}
 			}
-			
+						
 			function onTeletransportLocomotionStart( event ) {
 				guidingController = event.target;
 				guidelight.intensity = 1;
@@ -1662,13 +1677,8 @@
 				inVec.addScaledVector(g,0.5*t**2);
 				return inVec;
 			}
-			
-			function updateIntersections() {
-				cleanIntersected();
-				intersectObjects( controller1 );
-				intersectObjects( controller2 );							
-				checkMouseIntersect();
-			}
+						
+			// MOUSE INTERSECTIONS
 			
 			let mouseVectors = new THREE.Vector2();
 			let targetRotationX = 0;
@@ -1708,6 +1718,25 @@
 					*/
 				}
 			}			
+			
+			// CONTROLLER PANEL
+			
+			function updateControllerPanels() {
+				if (manuallySetControllerPanelsSize) return;
+				if (objControllerPanels!=null)
+				{
+					if (renderer.xr.isPresenting)
+					{
+						objControllerPanels.position.set(-10, 0, 2);
+						objControllerPanels.scale.set(0.1, 0.1, 0.1);
+					}
+					else 
+					{
+						objControllerPanels.position.set(0, 0, 0);
+						objControllerPanels.scale.set(1, 1, 1);						
+					}				
+				}
+			}
 			
 			let tweenButton = null;
 			
@@ -1884,24 +1913,10 @@
 				}
 			}
 			
-			function simulateKeyEvent(character) {
-			  var evt = document.createEvent("KeyboardEvent");
-			  (evt.initKeyEvent || evt.initKeyboardEvent)("keypress", true, true, window,
-								0, 0, 0, 0,
-								0, character.charCodeAt(0)) 
-			  var canceled = !body.dispatchEvent(evt);
-			  if(canceled) {
-				// A handler called preventDefault
-				alert("canceled");
-			  } else {
-				// None of the handlers called preventDefault
-				alert("not canceled");
-			  }
-			}			
-						
+			// MOUSE CLICKS
+			
 			function onDocumentMouseDown(event) {
-				debugLog("On MouseDown");
-				
+				debugLog("On MouseDown");				
 				event.preventDefault();
 				document.addEventListener('mousemove', onDocumentMouseMove, false);
 				document.addEventListener('pointerup', onDocumentMouseUp, false);
@@ -1916,8 +1931,7 @@
 			}
 
 			function onDocumentMouseMove(event) {
-				debugLog("On MouseMove");
-				
+				debugLog("On MouseMove");				
 				mouseX = event.clientX - windowHalfX;
 				mouseY = event.clientY - windowHalfY;
 				targetRotationX = targetRotationXOnMouseDown + (mouseX - mouseXOnMouseDown) * 0.02;
@@ -1939,6 +1953,8 @@
 				document.removeEventListener('mouseout', onDocumentMouseOut, false);
 			}
 
+			// TOUCH
+			
 			function onDocumentTouchStart(event) {
 				if (event.touches.length === 1) {
 					event.preventDefault();
@@ -1959,6 +1975,8 @@
 				}
 			}
 	
+			// SOUNDS
+			
 			/* // ToDo
 			function loadSound(url) {
 				var request = new XMLHttpRequest();
@@ -1998,6 +2016,37 @@
 			loadAlertSound('https://s3-us-west-2.amazonaws.com/s.cdpn.io/8223/alert.mp3');
 			*/	
 			
+			// SELECT
+
+			let objectSelected = null;
+			
+			function onSelectStart( event ) {
+				if (objectSelected != null) return;
+				const controller = event.target;
+				const mouseIntersections = getIntersections( controller, mouseIntersectableObjects );
+				if ( mouseIntersections.length > 0 ) {
+					const intersection = mouseIntersections[ 0 ];
+					const object = intersection.object;
+					object.material.emissive.r = 0.25;
+					object.material.emissive.g = 0.25;
+					object.material.emissive.b = 0.25;
+					objectSelected = object;
+					executeButton(objectSelected);
+				}			
+			}				
+
+			function onSelectEnd( event ) {
+				const controller = event.target;
+				if (objectSelected != null) {
+					objectSelected.material.emissive.r = 0;
+					objectSelected.material.emissive.g = 0;
+					objectSelected.material.emissive.b = 0;
+					objectSelected = null;
+				}
+			}
+			
+			// GRAB
+			
 			function onGrabStart( event ) {
 				const controller = event.target;
 				if (guidingController === controller) 
@@ -2007,8 +2056,8 @@
 					guidelight.intensity = 0;
 					controller.remove(guideline);
 					scene.remove(guidesprite);
-				}									
-				const intersections = getIntersections( controller );
+				}							
+				const intersections = getIntersections( controller, intersectableObjects );
 				if ( intersections.length > 0 ) {
 					const intersection = intersections[ 0 ];
 					const object = intersection.object;
@@ -2016,7 +2065,7 @@
 					intersectionParent = object.parent;
 					controller.attach( object );
 					controller.userData.selected = object;									
-				}
+				}				
 			}
 
 			function onGrabEnd( event ) {
@@ -2029,18 +2078,33 @@
 				}
 			}
 
-			function getIntersections( controller ) {
+			// INTERSECTIONS
+		
+			function updateIntersections() {
+				if (renderer.xr.isPresenting)
+				{
+					cleanIntersected();
+					intersectObjects( controller1 );
+					intersectObjects( controller2 );							
+				}
+				else 
+				{
+					checkMouseIntersect();
+				}
+			}
+		
+			function getIntersections( controller, intersectableObjs ) {
 				tempMatrix.identity().extractRotation( controller.matrixWorld );
 				raycaster.ray.origin.setFromMatrixPosition( controller.matrixWorld );
 				raycaster.ray.direction.set( 0, 0, - 1 ).applyMatrix4( tempMatrix );
-				return raycaster.intersectObjects( intersectableObjects );
+				return raycaster.intersectObjects( intersectableObjs );
 			}
 
 			function intersectObjects( controller ) {
 				// Do not highlight when already selected
 				if ( controller.userData.selected !== undefined ) return;
 				const line = controller.getObjectByName( 'line' );
-				const intersections = getIntersections( controller );
+				const intersections = getIntersections( controller, intersectableObjects );
 				if ( intersections.length > 0 ) {
 					const intersection = intersections[ 0 ];
 					const object = intersection.object;
@@ -2058,7 +2122,159 @@
 					object.material.emissive.r = 0;
 				}
 			}		
+			
+			// GAMEPAD
+			
+			var haveGamePadEvents = 'ongamepadconnected' in window;
+			var controllersGamePad = {};
+
+			function connectGamePadHandler(e) {
+				addgamepad(e.gamepad);
+			}
+			function disconnectGamePadHandler(e) {
+				removegamepad(e.gamepad);
+			}
+
+			function addgamepad(gamepad) {
+				controllersGamePad[gamepad.index] = gamepad;
+				debugLog("GamePad detected: " + gamepad.index + " - " + gamepad.id);
+				debugLog("- GamePad buttons: " + gamepad.buttons.length);
+				debugLog("- GamePad axes: " + gamepad.axes.length);
+			}
+
+			function removegamepad(gamepad) {
+				delete controllersGamePad[gamepad.index];
+			}
+
+			const prevGamePads = new Map();
+			function updateGamePadEvents() {
+				if (!haveGamePadEvents) {
+					scangamepads();
+				}
+				let i = 0;
+				var j;
+				for (j in controllersGamePad) {
+					var controller = controllersGamePad[j];
+					const old = prevGamePads.get(controller.index);					
+					const data = {					
+						buttons: controller.buttons.map((b) => b.value),
+						axes: controller.axes.slice(0)
+					};					
+					if (old) {						
+						data.buttons.forEach((value, i) => {
+							// Handlers for buttons
+							if (value !== old.buttons[i]) 
+							{								
+								// Check if it is 'all the way pushed'
+								if (value === 1) {
+									debugLog("GamePad Button " + i + " Down");
+								} else {
+									debugLog("GamePad Button " + i + " Up");
+								}
+							}
+						});
+						data.axes.forEach((value, i) => {
+							// Handlers for axes
+							if (value !== old.axes[i]) {
+								// If thumbstick axis has moved beyond the minimum threshold from center, windows mixed reality seems to wander up to about .17 with no input
+								if (Math.abs(value) > 0.2) {
+									debugLog("Axes " + i + " Moved");
+								} else {
+									debugLog("Axes " + i + " Stopped");
+								}
+							}
+						});						
+					}
+					/// Store this frames data to compate with in the next frame
+					prevGamePads.set(controller.index, data);					
+				}
+			}
+
+			function scangamepads() {
+				var gamepads = navigator.getGamepads ? navigator.getGamepads() : (navigator.webkitGetGamepads ? navigator.webkitGetGamepads() : []);
+				for (var i = 0; i < gamepads.length; i++) {
+					if (gamepads[i]) {
+						if (gamepads[i].index in controllersGamePad) {
+							controllersGamePad[gamepads[i].index] = gamepads[i];
+						} else {
+							addgamepad(gamepads[i]);
+						}
+					}
+				}
+			}
+
+			window.addEventListener("gamepadconnected", connectGamePadHandler);
+			window.addEventListener("gamepaddisconnected", disconnectGamePadHandler);
+			if (!haveGamePadEvents) {
+				setInterval(scangamepads, 500);
+			}					
+					
+			// XR - GAMEPAD
+			
+			const prevXRGamePads = new Map();
+			function updateXRGamePadEvents() {
+				var handedness = "unknown";
+				
+				let i = 0;
+				
+				if (renderer.xr.isPresenting) {
+					const session = renderer.xr.getSession();					
+					// A check to prevent console errors if only one input source
+					if (isIterable(session.inputSources)) {
+						for (const source of session.inputSources) {
+							if (source && source.handedness) {
+								handedness = source.handedness; //left or right controllers
+							}
+							if (!source.gamepad) continue;
+							const controller = renderer.xr.getController(i++);
+							const old = prevXRGamePads.get(source);
+							const data = {
+								handedness: handedness,
+								buttons: source.gamepad.buttons.map((b) => b.value),
+								axes: source.gamepad.axes.slice(0)
+							};
+							if (old) {
+								data.buttons.forEach((value, i) => {
+									// Handlers for buttons
+									if (value !== old.buttons[i]) {
+										// Check if it is 'all the way pushed'
+										if (value === 1) {
+											debugLog("Button " + i + " Down (" + data.handedness + ")");
+										} else {
+											debugLog("Button " + i + " Up (" + data.handedness + ")");
+										}
+									}
+								});
+								data.axes.forEach((value, i) => {
+									// Handlers for thumbsticks
+									if (value !== old.axes[i]) {
+										// If thumbstick axis has moved beyond the minimum threshold from center, windows mixed reality seems to wander up to about .17 with no input
+										if (Math.abs(value) > 0.2) {
+											debugLog("Axes " + i + " Moved (" + data.handedness + ")");
+										} else {
+											debugLog("Axes " + i + " Stopped (" + data.handedness + ")");
+										}
+									}
+								});
+							}
+							/// Store this frames data to compate with in the next frame
+							prevXRGamePads.set(source, data);
+						}
+					}
+				}
+			}
+
+			// function to check if object is iterable
+			function isIterable(obj) {  
+				// checks for null and undefined
+				if (obj == null) {
+					return false;
+				}
+				return typeof obj[Symbol.iterator] === "function";
+			}
 		
+			// MAIN
+			
 			main();
 			
 		</script>
