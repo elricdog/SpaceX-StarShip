@@ -46,14 +46,14 @@ else
 	_debugShadow = false;
 	_debugDimensionGrids = false;
 	_debugCubeReference = false;
-	_debugHumanReference = false;
-	_debugDragonReference = false;
+	_debugHumanReference = true;
+	_debugDragonReference = true;
 	_debugLog = false;
 	_debugFixedCameras = false;
 	_debugShowWingsAxis = false;
 
 	_controlsType = "orbit";
 	_hideHelpInitially = false;
-	_shadowsOffInitially = false;
+	_shadowsOffInitially = true;
 	_enginesOffInitially = true;
 }
