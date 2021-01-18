@@ -19,6 +19,7 @@ A bunch of code that will help noobs like me to start with:
 - Keyboard handle
 - Standard Gamepad
 - Particle system helper
+- Statistics in VR
 - Blender
 - Many more...
 
