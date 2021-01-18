@@ -21,7 +21,9 @@ A bunch of code that will help noobs like me to start with:
 - Particle system helper
 - Statistics in VR
 - Blender
-- Many more...
+- Lens flares
+- 3D UI
+- Many more and more to come...
 
 Look at license.txt files to find sources of inspiration.
 Many thanks to MR.doob & co for Threejs.
