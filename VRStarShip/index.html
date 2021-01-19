@@ -141,6 +141,11 @@
 				inclination: 0.36,
 				azimuth: 0.41
 			};				
+			const parametersDirLight = {
+				x: -680,
+				y: 420,
+				z: -700
+			};				
 
 			// Imports
 			import * as THREE from './three.js/three.js-master/build/three.module.js';			
@@ -355,23 +360,23 @@
 				// Lights				
 				sunLight = new THREE.HemisphereLight( 0xbfbfbf, 0xd4cec0 )
 				scene.add( sunLight );
-				spaceLight = new THREE.HemisphereLight( 0x5f5f7f, 0x0f0f1f )
+				spaceLight = new THREE.HemisphereLight( 0x5f5f7f, 0x1f1f2f )
 				spaceLight.visible = false;
 				oceanLight = new THREE.HemisphereLight( 0xbfbfbf, 0xd4d4f0 )
 				oceanLight.visible = false;
 				scene.add( spaceLight );
 				scene.add( oceanLight );
 				
-				dirLight = new THREE.DirectionalLight( 0xd4cec0 );				
-				dirLight.position.set( -1000, 700, 500 );				
+				dirLight = new THREE.DirectionalLight( 0xd4cec0 );								
+				dirLight.position.set( parametersDirLight.x, parametersDirLight.y, parametersDirLight.z );				
 				dirLight.castShadow = true;
-				dirLight.shadow.camera.near = 1000;
+				dirLight.shadow.camera.near = 100;
 				dirLight.shadow.camera.far = 2500;
 				dirLight.shadow.camera.left = -50;
 				dirLight.shadow.camera.bottom = -50;
 				dirLight.shadow.camera.right = 50;
 				dirLight.shadow.camera.top = 50;
-				dirLight.shadow.bias = 0.0001;
+				dirLight.shadow.bias = 0.00001;
 				dirLight.shadow.mapSize.width = SHADOW_MAP_WIDTH;
 				dirLight.shadow.mapSize.height = SHADOW_MAP_HEIGHT;
 				scene.add( dirLight );
@@ -884,6 +889,11 @@
 				// GUI
 				if (_debugGUI)
 				{
+					function updateDirLight() {
+						dirLight.position.set( parametersDirLight.x, parametersDirLight.y, parametersDirLight.z );				
+						lensflare.position.copy( dirLight.position );
+					}
+					
 					const gui = new GUI();
 					const folderSky = gui.addFolder( 'Sky' );
 					folderSky.add( parameters, 'inclination', 0, 0.5, 0.0001 ).onChange( updateWaterSun );
@@ -895,6 +905,11 @@
 					folderWater.add( waterUniforms.size, 'value', 0.1, 10, 0.1 ).name( 'size' );
 					folderWater.add( waterUniforms.alpha, 'value', 0.9, 1, .001 ).name( 'alpha' );
 					folderWater.open();				
+					const folderDirLight = gui.addFolder( 'DirLight' );
+					folderDirLight.add( parametersDirLight, 'x', -1000, 1000, 1 ).onChange( updateDirLight );
+					folderDirLight.add( parametersDirLight, 'y', -1000, 1000, 1 ).onChange( updateDirLight );
+					folderDirLight.add( parametersDirLight, 'z', -1000, 1000, 1 ).onChange( updateDirLight );
+					folderDirLight.open();
 				}
 			}
 
