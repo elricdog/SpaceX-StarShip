@@ -103,10 +103,12 @@
 					<h3><b>&nbsp;Developer:</b></h3>
 					<ul>						
 						<li>i - Output renderer information.</li>
-						<li>J - Hide reference objects.</li>
-						<li>j - Show reference objects.</li>
-						<li>D - Hide dragon.</li>
-						<li>d - Show dragon.</li>
+						<li>j - Hide reference objects.</li>
+						<li>J - Show reference objects.</li>
+						<li>d - Hide dragon.</li>
+						<li>D - Show dragon.</li>
+						<li>k - Hide control panels.</li>
+						<li>K - Show control panels.</li>
 					</ul>
 				</p>
 				<br>
@@ -1049,8 +1051,7 @@
 						manuallySetControllerPanelsSize = true;
 						objControllerPanels.position.set(-10, 0, 2);
 						objControllerPanels.scale.set(0.1, 0.1, 0.1);
-						break;
-
+						break;					
 						
 					case 'S':
 						debugLog( 'Reset Engines rotation' );
@@ -1375,6 +1376,14 @@
 						if (DragonMesh!=null)
 							DragonMesh.visible = false;
 						break;
+					case 'K':
+						if (objControllerPanels!=null)
+							objControllerPanels.visible = true;
+						break;						
+					case 'k':
+						if (objControllerPanels!=null)
+							objControllerPanels.visible = false;
+						break;												
 				} 
 			}					
 					
@@ -1433,7 +1442,7 @@
 			}
 
 			function updateWater() {
-				water.material.uniforms[ 'time' ].value += 1.0 / 60.0;			
+				water.material.uniforms[ 'time' ].value += 1.0 / 120.0;			
 			}
 			
 			// STATS

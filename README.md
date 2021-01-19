@@ -122,7 +122,9 @@ In VR:
 Developer:
   
 - i - Output renderer information.
-- J - Hide reference objects.
-- j - Show reference objects.
-- D - Hide dragon.
-- d - Show dragon.
+- j - Hide reference objects.
+- J - Show reference objects.
+- d - Hide dragon.
+- D - Show dragon.
+- k - Hide control panels.
+- K - Show control panels.
