@@ -22,6 +22,7 @@ A bunch of code that will help noobs like me to start with:
 - Statistics in VR
 - Blender
 - Lens flares
+- Water + Sky + Sun effect from threejs examples
 - 3D UI
 - Many more and more to come...
 
@@ -43,3 +44,11 @@ Manage wings:
 Burn that hell!:
 
 ![Image of SpaceX StarShip VR](https://github.com/elricdog/SpaceX-StarShip/blob/main/media/screenshot004.png)
+
+Launch from Ocean!:
+
+![Image of SpaceX StarShip VR](https://github.com/elricdog/SpaceX-StarShip/blob/main/media/screenshot005.png)
+
+GoTo Space!:
+
+![Image of SpaceX StarShip VR](https://github.com/elricdog/SpaceX-StarShip/blob/main/media/screenshot006.png)

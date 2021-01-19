@@ -63,6 +63,7 @@
 						<li>CTRL + Arrow Right - StarShip Move Right.</li>						
 						<li>G - StarShip on space environment.</li>
 						<li>g - StarShip on ground.</li>
+						<li>w - StarShip on ocean.</li>
 						<li>O - Shadows on.</li>
 						<li>o - Shadows off.</li>
 						<li>E - Toggle VR statistics visibility.</li>
@@ -132,7 +133,12 @@
 		<script type="module">				
 			// Constants
 			const SHADOW_MAP_WIDTH = 1024, SHADOW_MAP_HEIGHT = 1024;
-		
+
+			const parameters = {
+				inclination: 0.36,
+				azimuth: 0.41
+			};				
+
 			// Imports
 			import * as THREE from './three.js/three.js-master/build/three.module.js';			
 			import Stats from './three.js/three.js-master/examples/jsm/libs/stats.module.js';
@@ -150,6 +156,9 @@
 			import { VRButton } from './three.js/three.js-master/examples/jsm/webxr/VRButton.js'
 			import { XRControllerModelFactory } from './three.js/three.js-master/examples/jsm/webxr/XRControllerModelFactory.js';
 			import ParticleSystem from './particleSystem/particleSystem.js'
+			import { GUI } from './three.js/three.js-master/examples/jsm/libs/dat.gui.module.js';
+			import { Water } from './three.js/three.js-master/examples/jsm/objects/Water.js';
+			import { Sky } from './three.js/three.js-master/examples/jsm/objects/Sky.js';
 
 			// Variables
 			let container;
@@ -161,14 +170,17 @@
 			let statsVisibility;
 			let statsVR = null;
 			let statsVRVisibility;
-			let sunLight, spaceLight, dirLight;
+			let sunLight, spaceLight, oceanLight, dirLight;
 			let windowHalfX, windowHalfY;
+
+			let pmremGenerator;
 			
 			let starshipModelFilename = "StarShip-SN8.glb";
 			
 			let plane;
-			let material, envMap;
-			let textureCube, textureCube2;
+			let water, waterSun, waterSky;			
+			let material, envMap;			
+			let textureCube, textureCube2, textureCube3;
 						
 			const clock = new THREE.Clock();
 			
@@ -342,13 +354,16 @@
 				scene.add( sunLight );
 				spaceLight = new THREE.HemisphereLight( 0x5f5f7f, 0x0f0f1f )
 				spaceLight.visible = false;
+				oceanLight = new THREE.HemisphereLight( 0xbfbfbf, 0xd4d4f0 )
+				oceanLight.visible = false;
 				scene.add( spaceLight );
+				scene.add( oceanLight );
 				
 				dirLight = new THREE.DirectionalLight( 0xd4cec0 );				
-				dirLight.position.set( -100, 70, 50 );				
+				dirLight.position.set( 1000, 700, 500 );				
 				dirLight.castShadow = true;
-				dirLight.shadow.camera.near = 10;
-				dirLight.shadow.camera.far = 250;
+				dirLight.shadow.camera.near = 1000;
+				dirLight.shadow.camera.far = 2500;
 				dirLight.shadow.camera.left = -50;
 				dirLight.shadow.camera.bottom = -50;
 				dirLight.shadow.camera.right = 50;
@@ -357,7 +372,8 @@
 				dirLight.shadow.mapSize.width = SHADOW_MAP_WIDTH;
 				dirLight.shadow.mapSize.height = SHADOW_MAP_HEIGHT;
 				scene.add( dirLight );
-								
+							
+				// Debug Shadows
 				if (_debugShadow)
 				{
 					const helper = new THREE.CameraHelper( dirLight.shadow.camera );
@@ -430,6 +446,28 @@
 					scene.add( cube );
 				}
 				
+				// Water
+				const waterGeometry = new THREE.PlaneBufferGeometry( 10000, 10000 );
+				water = new Water(
+					waterGeometry,
+					{
+						textureWidth: 512,
+						textureHeight: 512,
+						waterNormals: new THREE.TextureLoader().load( './models/water/waternormals.jpg', function ( texture ) {
+							texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+						} ),
+						alpha: 1,
+						sunDirection: new THREE.Vector3(),
+						sunColor: 0xffffff,
+						waterColor: 0x001e0f,						
+						distortionScale: 3.7,
+						fog: scene.fog !== undefined
+					}
+				);
+				water.rotation.x = - Math.PI / 2;
+				water.visible = false;
+				scene.add( water );	
+				
 				// Background
 				const loaderSceneBackground = new THREE.CubeTextureLoader(loadingManager);
 				loaderSceneBackground.setPath( './models/background/' );
@@ -441,18 +479,42 @@
 				loaderSceneBackground.setPath( './models/background2/' );
 				textureCube2 = loaderSceneBackground.load( [ 'px.jpg', 'nx.jpg', 'py.jpg', 'ny.jpg', 'pz.jpg', 'nz.jpg' ] );
 				textureCube2.encoding = THREE.sRGBEncoding;				
+
+				// Background3
+				loaderSceneBackground.setPath( './models/background3/' );
+				textureCube3 = loaderSceneBackground.load( [ 'right.jpg', 'left.jpg', 'top.jpg', 'bottom.jpg', 'front.jpg', 'back.jpg' ] );
+				textureCube3.encoding = THREE.sRGBEncoding;				
 				
 				// Renderer
 				renderer = new THREE.WebGLRenderer( { antialias: true } );
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
-				renderer.outputEncoding = THREE.sRGBEncoding;
-				renderer.toneMapping = THREE.ACESFilmicToneMapping;
-				renderer.toneMappingExposure = 1;
+				//renderer.outputEncoding = THREE.sRGBEncoding;
+				//renderer.toneMapping = THREE.ACESFilmicToneMapping;
+				//renderer.toneMappingExposure = 1;
+				renderer.outputEncoding = THREE.LinearEncoding;
+				renderer.toneMapping = THREE.NoToneMapping;
 				renderer.autoClear = false;
 				renderer.shadowMap.enabled = true;
 				renderer.xr.enabled = true;
 				container.appendChild( renderer.domElement );
+				
+				// Material Stuff
+				pmremGenerator = new THREE.PMREMGenerator( renderer );
+				pmremGenerator.compileEquirectangularShader();				
+				
+				// Water Sky
+				waterSun = new THREE.Vector3();						
+				waterSky = new Sky();
+				waterSky.scale.setScalar( 10000 );
+				waterSky.visible = false;
+				scene.add( waterSky );
+				const skyUniforms = waterSky.material.uniforms;
+				skyUniforms[ 'turbidity' ].value = 10;
+				skyUniforms[ 'rayleigh' ].value = 2;
+				skyUniforms[ 'mieCoefficient' ].value = 0.005;
+				skyUniforms[ 'mieDirectionalG' ].value = 0.8;								
+				updateWaterSun();
 				
 				// Load StarShip material						
 				THREE.DefaultLoadingManager.onLoad = function ( ) {
@@ -684,7 +746,7 @@
 					function ( error ) {
 						console.log( 'An error happened ' + error );
 					}				
-				);								
+				);												
 									
 				// VR controllers
 				controller1 = renderer.xr.getController( 0 );
@@ -746,10 +808,6 @@
 				);
 				guidesprite.rotation.x = -Math.PI/2;				
 												
-				// Material Stuff
-				let pmremGenerator = new THREE.PMREMGenerator( renderer );
-				pmremGenerator.compileEquirectangularShader();				
-
 				// Controls
 				switch (_controlsType)
 				{
@@ -818,6 +876,22 @@
 					statsVR.setZ(-2);
 					statsVR.setEnabled(false);
 					statsVRVisibility = false;
+				}
+				
+				// GUI
+				if (_debugGUI)
+				{
+					const gui = new GUI();
+					const folderSky = gui.addFolder( 'Sky' );
+					folderSky.add( parameters, 'inclination', 0, 0.5, 0.0001 ).onChange( updateWaterSun );
+					folderSky.add( parameters, 'azimuth', 0, 1, 0.0001 ).onChange( updateWaterSun );
+					folderSky.open();
+					const waterUniforms = water.material.uniforms;
+					const folderWater = gui.addFolder( 'Water' );
+					folderWater.add( waterUniforms.distortionScale, 'value', 0, 8, 0.1 ).name( 'distortionScale' );
+					folderWater.add( waterUniforms.size, 'value', 0.1, 10, 0.1 ).name( 'size' );
+					folderWater.add( waterUniforms.alpha, 'value', 0.9, 1, .001 ).name( 'alpha' );
+					folderWater.open();				
 				}
 			}
 
@@ -1180,10 +1254,14 @@
 						debugLog( 'StarShip on ground' );
 						sunLight.visible = true;
 						spaceLight.visible = false;
+						oceanLight.visible = false;
 						dirLight.color = new THREE.Color( 0xd4cec0 );
+						lensflare.visible = true;
 						scene.background = new THREE.Color( 0xd4cec0 );
 						scene.fog = new THREE.Fog( 0xd4cec0, 50, 250 );
 						plane.visible = true;
+						water.visible = false;
+						waterSky.visible = false;
 						scene.background = textureCube;
 						applyEnvironmentMapToStarShip(envMap.texture, 0.45);
 						break;
@@ -1191,12 +1269,32 @@
 						debugLog( 'StarShip on space' );
 						sunLight.visible = false;
 						spaceLight.visible = true;
+						oceanLight.visible = false;
 						dirLight.color = new THREE.Color( 0xffffff );
+						lensflare.visible = true;
 						scene.background = new THREE.Color( 0x0 );
 						scene.fog = new THREE.Fog( 0x0, 50, 2500 );
 						plane.visible = false;
+						water.visible = false;
+						waterSky.visible = false;
 						scene.background = textureCube2;
 						applyEnvironmentMapToStarShip(textureCube2, 1);
+						break;
+						
+					case 'w':
+						debugLog( 'StarShip on ocean' );
+						sunLight.visible = false;
+						spaceLight.visible = false;
+						oceanLight.visible = true;
+						dirLight.color = new THREE.Color( 0xffffff );
+						lensflare.visible = false;
+						scene.background = new THREE.Color( 0x0 );
+						scene.fog = new THREE.Fog( 0x0, 1000, 10000 );
+						plane.visible = false;
+						water.visible = true;
+						waterSky.visible = true;
+						scene.background = textureCube3;
+						applyEnvironmentMapToStarShip(textureCube3, 1);
 						break;
 						
 					case 'o':
@@ -1278,6 +1376,7 @@
 					updateStats();
 					updateControllerPanels();
 					updateHelp();
+					updateWater();
 					render(delta);	
 				} );
 			}
@@ -1302,6 +1401,23 @@
 					lightShadowMapViewer.render( renderer );
 			}
 
+			// WATER
+			
+			function updateWaterSun() {				
+				const theta = Math.PI * ( parameters.inclination - 0.5 );
+				const phi = 2 * Math.PI * ( parameters.azimuth - 0.5 );
+				waterSun.x = Math.cos( phi );
+				waterSun.y = Math.sin( phi ) * Math.sin( theta );
+				waterSun.z = Math.sin( phi ) * Math.cos( theta );
+				waterSky.material.uniforms[ 'sunPosition' ].value.copy( waterSun );
+				water.material.uniforms[ 'sunDirection' ].value.copy( waterSun ).normalize();							
+				scene.environment = pmremGenerator.fromScene( waterSky ).texture;				
+			}
+
+			function updateWater() {
+				water.material.uniforms[ 'time' ].value += 1.0 / 60.0;			
+			}
+			
 			// STATS
 			
 			function updateStats() {
@@ -1917,8 +2033,9 @@
 			// MOUSE CLICKS
 			
 			function onDocumentMouseDown(event) {
-				debugLog("On MouseDown");				
-				event.preventDefault();
+				debugLog("On MouseDown");
+				if (_debugGUI===false)
+					event.preventDefault();				
 				document.addEventListener('mousemove', onDocumentMouseMove, false);
 				document.addEventListener('pointerup', onDocumentMouseUp, false);
 				document.addEventListener('mouseout', onDocumentMouseOut, false);
@@ -1958,7 +2075,8 @@
 			
 			function onDocumentTouchStart(event) {
 				if (event.touches.length === 1) {
-					event.preventDefault();
+					if (_debugGUI===false)
+						event.preventDefault();
 					mouseXOnMouseDown = event.touches[0].pageX - windowHalfX;
 					mouseYOnMouseDown = event.touches[0].pageY - windowHalfY;
 					targetRotationXOnMouseDown = targetRotationX;
@@ -1968,7 +2086,8 @@
 
 			function onDocumentTouchMove(event) {
 				if (event.touches.length === 1) {
-					event.preventDefault();
+					if (_debugGUI===false)
+						event.preventDefault();
 					mouseX = event.touches[0].pageX - windowHalfX;
 					mouseY = event.touches[0].pageY - windowHalfY;
 					targetRotationX = targetRotationXOnMouseDown + (mouseX - mouseXOnMouseDown) * 0.05;

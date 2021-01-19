@@ -13,11 +13,12 @@ if (url.startsWith("https://127.0.0.1"))
 	_debugLog = true;
 	_debugFixedCameras = false;
 	_debugShowWingsAxis = false;
+	_debugGUI = true;
 
 	_controlsType = "map";
 	_hideHelpInitially = true;			
 	_shadowsOffInitially = false;
-	_enginesOffInitially = false;
+	_enginesOffInitially = true;
 }
 else if (url.startsWith("https://192.168.1.2"))
 {
@@ -32,6 +33,7 @@ else if (url.startsWith("https://192.168.1.2"))
 	_debugLog = false;
 	_debugFixedCameras = false;
 	_debugShowWingsAxis = false;
+	_debugGUI = false;
 
 	_controlsType = "orbit";
 	_hideHelpInitially = false;			
@@ -51,6 +53,7 @@ else
 	_debugLog = false;
 	_debugFixedCameras = false;
 	_debugShowWingsAxis = false;
+	_debugGUI = false;
 
 	_controlsType = "orbit";
 	_hideHelpInitially = false;
